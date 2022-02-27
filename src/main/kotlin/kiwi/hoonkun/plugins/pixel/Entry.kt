@@ -49,7 +49,7 @@ class Entry: JavaPlugin() {
 
         val remainingArgs = args.slice(1 until args.size)
 
-        return executors[args[0]]?.exec(remainingArgs) ?: false
+        return executors[args[0]]?.exec(sender, remainingArgs) ?: false
     }
 
     override fun onTabComplete(
