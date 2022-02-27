@@ -50,9 +50,7 @@ class ListExecutor: Executor() {
 
     private fun printBranches(git: Git, sender: CommandSender?) {
         val branches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call()
-        val list = branches.chunked(5).joinToString("\n") {
-            it.joinToString("") { ref -> ref.name.format("%10s") }
-        }
+        val list = branches.joinToString("\n") { it.name }
 
         val message = "[total ${branches.size} branches]\n$list"
 
