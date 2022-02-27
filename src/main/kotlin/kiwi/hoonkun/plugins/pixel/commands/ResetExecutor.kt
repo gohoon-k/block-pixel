@@ -15,10 +15,12 @@ class ResetExecutor: Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
+        val target = args[0].toIntOrNull()
+
         try {
             Git(repo).reset()
                 .setMode(ResetCommand.ResetType.HARD)
-                .setRef(if (args[0].toIntOrNull() != null) "HEAD~${args[0]}" else args[0])
+                .setRef(if (target != null && target <= 10) "HEAD~${args[0]}" else args[0])
                 .call()
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult(exception)
