@@ -53,9 +53,9 @@ class RegionWorker {
                 val location = RegionLocation(regionX, regionZ)
                 if (!temp.containsKey(location)) temp[location] = MutableVersionedRegion()
 
-                when (segments[3]) {
+                when (segments[4]) {
                     "t" -> temp[location]!!.types = String(it.readBytes())
-                    "v" -> temp[location]!!.data = String(it.readBytes())
+                    "d" -> temp[location]!!.data = String(it.readBytes())
                 }
             }
 
