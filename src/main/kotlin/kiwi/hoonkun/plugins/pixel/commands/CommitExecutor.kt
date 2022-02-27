@@ -44,7 +44,7 @@ class CommitExecutor: Executor() {
 
         if (!add) return true
 
-        spawn(listOf("git", "commit", "-m", args[0]), Entry.versionedFolder!!)
+        spawn(listOf("git", "commit", "-m", args.joinToString(" ")), Entry.versionedFolder!!)
             .handle(
                 sender,
                 "pixel_commit",
