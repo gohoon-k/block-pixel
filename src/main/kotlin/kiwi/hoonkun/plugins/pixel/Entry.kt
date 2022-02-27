@@ -4,9 +4,19 @@ import kiwi.hoonkun.plugins.pixel.commands.*
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
 import java.util.logging.Level
 
 class Entry: JavaPlugin() {
+
+    companion object {
+
+        var dataFolder: File? = null
+
+        var logFolder: File? = null
+        var versionedFolder: File? = null
+
+    }
 
     private val executors: Map<String, Executor> = mapOf(
         "init" to InitializeExecutor(),
@@ -23,6 +33,10 @@ class Entry: JavaPlugin() {
 
     override fun onEnable() {
         super.onEnable()
+
+        Entry.dataFolder = dataFolder
+        logFolder = File("${dataFolder.absolutePath}/logs")
+        versionedFolder = File("${dataFolder.absolutePath}/versioned")
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
