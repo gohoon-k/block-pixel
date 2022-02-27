@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.commands.*
+import org.bukkit.ChatColor
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
@@ -74,7 +75,15 @@ class Entry: JavaPlugin() {
 
         val remainingArgs = args.slice(1 until args.size)
 
-        return executors[args[0]]?.exec(sender, remainingArgs) ?: false
+        val executor = executors[args[0]] ?: run {
+            sender.sendMessage(ChatColor.RED + "unknown command '${args[0]}'")
+            return true
+        }
+        val result = executor.exec(sender, remainingArgs)
+
+        sender.sendMessage(result.message)
+
+        return result.success
     }
 
     override fun onTabComplete(
@@ -89,5 +98,7 @@ class Entry: JavaPlugin() {
 
         return executors[args[0]]?.autoComplete(args.slice(1 until args.size))
     }
+
+    operator fun ChatColor.plus(other: String): String = "" + this + other
 
 }

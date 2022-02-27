@@ -5,20 +5,16 @@ import org.bukkit.command.CommandSender
 
 class BranchExecutor: Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): Boolean {
+    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         val create = spawn(listOf("git", "branch", args[0]), Entry.versionedFolder!!)
             .handle(
-                sender,
-                "pixel_branch",
                 "successfully created new branch: ${args[0]}. checkout...",
                 "failed to create branch: ${args[0]}. aborting..."
             )
 
-        if (!create) return true
+        if (!create.success) return create
 
-        CheckoutExecutor().exec(sender, listOf(args[0]))
-
-        return true
+        return CheckoutExecutor().exec(sender, listOf(args[0]))
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

@@ -4,8 +4,8 @@ import org.bukkit.command.CommandSender
 
 class MergeExecutor: Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): Boolean {
-        return true
+    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        TODO("implement this function")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

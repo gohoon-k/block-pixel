@@ -6,32 +6,26 @@ import org.bukkit.command.CommandSender
 
 class CommitExecutor: Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): Boolean {
+    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty()) {
-            return returnMessage(sender, "cannot commit if message is not specified.")
+            return CommandExecuteResult(false, "cannot commit if message is not specified.")
         }
 
         WriteWorker.client2versioned(listOf("overworld", "nether", "the_end"))
 
         val add = spawn(listOf("git", "add", "."), Entry.versionedFolder!!)
             .handle(
-                sender,
-                "pixel_commit_add",
-                "successfully added region files to vcs. committing...",
+                "<UNUSED_MESSAGE>",
                 "failed to add region files to vcs. aborting..."
             )
 
-        if (!add) return true
+        if (!add.success) return add
 
-        spawn(listOf("git", "commit", "-m", args.joinToString(" ")), Entry.versionedFolder!!)
+        return spawn(listOf("git", "commit", "-m", args.joinToString(" ")), Entry.versionedFolder!!)
             .handle(
-                sender,
-                "pixel_commit",
                 "successfully committed. to find out commit hash, use /pixel list commits.",
                 "failed to commit. check out the generated log file."
             )
-
-        return true
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
