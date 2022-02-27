@@ -1,0 +1,6 @@
+name: Pixel
+version: '${project.version}'
+main: kiwi.hoonkun.plugins.pixel.Entry
+api-version: 1.18
+authors: [ hoon_kiwicraft ]
+description: 마인크래프트 맵을 git 으로 버전관리해보세요!!
