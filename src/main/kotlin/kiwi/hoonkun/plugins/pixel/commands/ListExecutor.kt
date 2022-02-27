@@ -36,8 +36,8 @@ class ListExecutor: Executor() {
 
     private fun printCommits(git: Git, page: Int = 0, sender: CommandSender?) {
         val branch = git.repository.fullBranch
-        val commits = git.log().addPath(branch).call()
-        val header = "[${page * 10 + 1}-${(page + 1) * 10} of ${commits.toList().size} commits in branch '$branch']"
+        val commits = git.log().call().toList()
+        val header = "[${page * 10 + 1}-${((page + 1) * 10).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
         val commitsString = commits.chunked(10)[page].joinToString("\n") {
             "${SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(Date(it.commitTime * 1000L))}   ${it.name.substring(0, 8)}   ${it.shortMessage}"
         }
