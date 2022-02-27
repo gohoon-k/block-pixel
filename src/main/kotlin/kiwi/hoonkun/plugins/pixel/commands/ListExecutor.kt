@@ -9,6 +9,13 @@ import java.util.*
 
 class ListExecutor: Executor() {
 
+    companion object {
+
+        val COMPLETE_LIST_0 = mutableListOf("commits", "branches")
+        val COMPLETE_LIST_1_WHEN_COMMIT = mutableListOf("<page>")
+
+    }
+
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. please specify what to list up.")
@@ -58,8 +65,13 @@ class ListExecutor: Executor() {
         else println(message)
     }
 
+
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return mutableListOf()
+        return when (args.size) {
+            0 -> COMPLETE_LIST_0
+            1 -> if (args[0] == "commits") COMPLETE_LIST_1_WHEN_COMMIT else COMPLETE_LIST_EMPTY
+            else -> COMPLETE_LIST_EMPTY
+        }
     }
 
 }

@@ -7,6 +7,12 @@ import org.eclipse.jgit.api.errors.GitAPIException
 
 class BranchExecutor: Executor() {
 
+    companion object {
+
+        val COMPLETE_LIST_0 = mutableListOf("<branch_name>")
+
+    }
+
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing, branch name must be specified.")
@@ -26,7 +32,10 @@ class BranchExecutor: Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return mutableListOf()
+        return when (args.size) {
+            0 -> COMPLETE_LIST_0
+            else -> COMPLETE_LIST_EMPTY
+        }
     }
 
 }

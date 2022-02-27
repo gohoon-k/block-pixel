@@ -5,6 +5,12 @@ import org.eclipse.jgit.api.errors.GitAPIException
 
 abstract class Executor {
 
+    companion object {
+
+        val COMPLETE_LIST_EMPTY = mutableListOf<String>()
+
+    }
+
     data class CommandExecuteResult(
         val success: Boolean,
         val message: String

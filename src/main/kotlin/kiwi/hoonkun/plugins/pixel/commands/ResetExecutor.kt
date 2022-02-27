@@ -9,6 +9,12 @@ import org.eclipse.jgit.api.errors.GitAPIException
 
 class ResetExecutor: Executor() {
 
+    companion object {
+
+        val COMPLETE_LIST_0 = mutableListOf("<steps>", "<commit_hash>")
+
+    }
+
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. back steps or commit name must be specified.")
@@ -32,7 +38,10 @@ class ResetExecutor: Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return mutableListOf()
+        return when (args.size) {
+            0 -> COMPLETE_LIST_0
+            else -> COMPLETE_LIST_EMPTY
+        }
     }
 
 }

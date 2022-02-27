@@ -9,6 +9,12 @@ import org.eclipse.jgit.lib.PersonIdent
 
 class CommitExecutor: Executor() {
 
+    companion object {
+
+        val COMPLETE_LIST_0 = mutableListOf("<commit_message>")
+
+    }
+
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "cannot commit if message is not specified.")
@@ -36,7 +42,10 @@ class CommitExecutor: Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return mutableListOf()
+        return when (args.size) {
+            0 -> COMPLETE_LIST_0
+            else -> COMPLETE_LIST_EMPTY
+        }
     }
 
 }
