@@ -42,7 +42,7 @@ class ListExecutor: Executor() {
     }
 
     private fun printCommits(git: Git, page: Int = 0, sender: CommandSender?) {
-        val branch = git.repository.fullBranch
+        val branch = git.repository.branch
         val commits = git.log().call().toList()
         val header = "[${page * 10 + 1}-${((page + 1) * 10).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
         val commitsString = commits.chunked(10)[page].joinToString("\n") {
@@ -57,7 +57,10 @@ class ListExecutor: Executor() {
 
     private fun printBranches(git: Git, sender: CommandSender?) {
         val branches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call()
-        val list = branches.joinToString("\n") { it.name }
+        val list = branches.joinToString("\n") {
+            val indexes = it.name.findIndexes('/')
+            it.name.substring(indexes[1] + 1, it.name.length)
+        }
 
         val message = "[total ${branches.size} branches]\n$list"
 
@@ -65,6 +68,15 @@ class ListExecutor: Executor() {
         else println(message)
     }
 
+    private fun String.findIndexes(char: Char): List<Int> {
+        val result = mutableListOf<Int>()
+        var index = 0
+        split(char).forEach {
+            index += it.length
+            result.add(index)
+        }
+        return result
+    }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
