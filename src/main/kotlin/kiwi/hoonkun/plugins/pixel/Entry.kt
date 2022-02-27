@@ -27,7 +27,6 @@ class Entry: JavaPlugin() {
         "commit" to CommitExecutor(),
         "discard" to DiscardExecutor(),
         "reset" to ResetExecutor(),
-        "revert" to RevertExecutor(),
         "branch" to BranchExecutor(),
         "checkout" to CheckoutExecutor(),
         "merge" to MergeExecutor(),
