@@ -25,7 +25,7 @@ class CommitExecutor: Executor() {
                 .call()
 
             val commit = git.commit()
-                .setMessage(args[0])
+                .setMessage(args.joinToString(" "))
                 .setCommitter(PersonIdent(repo))
                 .call()
 
