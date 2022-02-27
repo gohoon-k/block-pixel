@@ -8,10 +8,9 @@ import java.io.File
 class InitializeExecutor: Executor() {
 
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val versionedFolder = Entry.versionedFolder!!
-        if (!versionedFolder.exists()) versionedFolder.mkdirs()
+        if (!Entry.versionedFolder.exists()) Entry.versionedFolder.mkdirs()
 
-        val repository = FileRepositoryBuilder.create(File("${versionedFolder.absolutePath}/.git"))
+        val repository = FileRepositoryBuilder.create(File("${Entry.versionedFolder.absolutePath}/.git"))
         repository.create()
 
         Entry.repository = repository

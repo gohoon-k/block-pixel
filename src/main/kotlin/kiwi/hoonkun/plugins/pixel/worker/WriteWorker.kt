@@ -12,9 +12,9 @@ class WriteWorker {
     companion object {
 
         private val clientDimensions get() = mapOf(
-            "overworld" to "${Entry.clientFolder!!.absolutePath}/${Entry.levelName}/region",
-            "nether" to "${Entry.clientFolder!!.absolutePath}/${Entry.levelName}_nether/DIM-1/region",
-            "the_end" to "${Entry.clientFolder!!.absolutePath}/${Entry.levelName}_the_end/DIM1/region"
+            "overworld" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}/region",
+            "nether" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_nether/DIM-1/region",
+            "the_end" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_the_end/DIM1/region"
         )
 
         fun client2versioned(dimensions: List<String>): Boolean {
@@ -29,8 +29,7 @@ class WriteWorker {
         }
 
         fun versioned2client(dimensions: List<String>): Boolean {
-            val versionedFolder = Entry.versionedFolder!!
-            val versionedPath = versionedFolder.absolutePath
+            val versionedPath = Entry.versionedFolder.absolutePath
 
             dimensions.forEach { dimension ->
                 val clientDimension = clientDimensions[dimension] ?: return false
@@ -48,7 +47,7 @@ class WriteWorker {
 
         private fun saveVersioned(dimension: String, versioned: VersionedRegions) {
             versioned.get.entries.forEach { (location, region) ->
-                val outputDirectory = File("${Entry.versionedFolder!!.absolutePath}/$dimension")
+                val outputDirectory = File("${Entry.versionedFolder.absolutePath}/$dimension")
                 if (!outputDirectory.exists()) outputDirectory.mkdirs()
 
                 val outputDataFile = File("${outputDirectory.absolutePath}/r.${location.x}.${location.z}.mca.d")

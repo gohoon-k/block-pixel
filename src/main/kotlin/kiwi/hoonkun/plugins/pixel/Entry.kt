@@ -14,13 +14,13 @@ class Entry: JavaPlugin() {
 
     companion object {
 
-        var dataFolder: File? = null
+        lateinit var dataFolder: File
 
-        var logFolder: File? = null
-        var versionedFolder: File? = null
-        var clientFolder: File? = null
+        lateinit var logFolder: File
+        lateinit var versionedFolder: File
+        lateinit var clientFolder: File
 
-        var levelName: String? = null
+        lateinit var levelName: String
 
         var repository: Repository? = null
 
@@ -48,12 +48,12 @@ class Entry: JavaPlugin() {
         versionedFolder = File("$dataFolderPath/versioned")
         clientFolder = File("$dataFolderPath/../..")
 
-        val properties = String(File("$dataFolderPath/../../server.properties").readBytes())
+        val properties = String(File("${clientFolder.absolutePath}/server.properties").readBytes())
         levelName = properties.split("\n")
             .map { it.split("=") }
-            .associate { Pair(it[0], it[1]) }["level-name"]
+            .associate { Pair(it[0], it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
 
-        val gitDir = File("${versionedFolder!!.absolutePath}/.git")
+        val gitDir = File("${versionedFolder.absolutePath}/.git")
         if (gitDir.exists()) {
             val repositoryBuilder = FileRepositoryBuilder()
             repositoryBuilder.gitDir = gitDir
