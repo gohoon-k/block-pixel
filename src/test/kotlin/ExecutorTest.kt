@@ -2,6 +2,7 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.commands.*
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
 
 class Environment {
@@ -15,6 +16,13 @@ class Environment {
             Entry.clientFolder = File("$dataFolder/../..")
             Entry.levelName = "world"
             Entry.logFolder = File("$dataFolder/logs")
+
+            val gitDir = File("${Entry.versionedFolder!!.absolutePath}/.git")
+            if (gitDir.exists()) {
+                val repositoryBuilder = FileRepositoryBuilder()
+                repositoryBuilder.gitDir = gitDir
+                Entry.repository = repositoryBuilder.build()
+            }
         }
 
     }
