@@ -16,7 +16,7 @@ class CheckoutExecutor: Executor() {
         val repo = Entry.repository ?: return invalidRepositoryResult
 
         try {
-            val command = Git(repo).checkout().addPath(args[0])
+            val command = Git(repo).checkout().setName(args[0])
             command.call()
 
             if (command.result.status != CheckoutResult.Status.OK) {

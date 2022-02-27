@@ -15,7 +15,7 @@ class BranchExecutor: Executor() {
 
         try {
             Git(repo).checkout()
-                .addPath(args[0])
+                .setName(args[0])
                 .setCreateBranch(true)
                 .call()
         } catch (exception: GitAPIException) {
