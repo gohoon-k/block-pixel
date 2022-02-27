@@ -4,7 +4,7 @@ import org.bukkit.command.CommandSender
 
 class UndoExecutor: Executor() {
 
-    override fun exec(sender: CommandSender, args: List<String>): Boolean {
+    override fun exec(sender: CommandSender?, args: List<String>): Boolean {
         return true
     }
 
