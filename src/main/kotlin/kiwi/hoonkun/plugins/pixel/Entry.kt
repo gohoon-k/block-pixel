@@ -5,6 +5,8 @@ import org.bukkit.ChatColor
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
+import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
 import java.util.logging.Level
 
@@ -19,6 +21,8 @@ class Entry: JavaPlugin() {
         var clientFolder: File? = null
 
         var levelName: String? = null
+
+        var repository: Repository? = null
 
     }
 
@@ -48,6 +52,13 @@ class Entry: JavaPlugin() {
         levelName = properties.split("\n")
             .map { it.split("=") }
             .associate { Pair(it[0], it[1]) }["level-name"]
+
+        val gitDir = File("${versionedFolder!!.absolutePath}/.git")
+        if (gitDir.exists()) {
+            val repositoryBuilder = FileRepositoryBuilder()
+            repositoryBuilder.gitDir = gitDir
+            repository = repositoryBuilder.build()
+        }
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
