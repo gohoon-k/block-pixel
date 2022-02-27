@@ -1,5 +1,6 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
+import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import java.io.BufferedReader
 import java.io.File
@@ -42,7 +43,7 @@ abstract class Executor {
         return if (exitCode == 0) {
             CommandExecuteResult(true, successMessage)
         } else {
-            CommandExecuteResult(false, "$failedMessage\ngit says:\n$out")
+            CommandExecuteResult(false, "$failedMessage\n${ChatColor.GRAY}git says:\n$out")
         }
     }
 

@@ -81,9 +81,10 @@ class Entry: JavaPlugin() {
         }
         val result = executor.exec(sender, remainingArgs)
 
-        sender.sendMessage(result.message)
+        if (result.success) sender.sendMessage(result.message)
+        else sender.sendMessage(ChatColor.RED + result.message)
 
-        return result.success
+        return true
     }
 
     override fun onTabComplete(
