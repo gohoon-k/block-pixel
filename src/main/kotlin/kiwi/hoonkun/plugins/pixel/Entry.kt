@@ -15,6 +15,9 @@ class Entry: JavaPlugin() {
 
         var logFolder: File? = null
         var versionedFolder: File? = null
+        var clientFolder: File? = null
+
+        var levelName: String? = null
 
     }
 
@@ -34,9 +37,17 @@ class Entry: JavaPlugin() {
     override fun onEnable() {
         super.onEnable()
 
+        val dataFolderPath = dataFolder.absolutePath
+
         Entry.dataFolder = dataFolder
-        logFolder = File("${dataFolder.absolutePath}/logs")
-        versionedFolder = File("${dataFolder.absolutePath}/versioned")
+        logFolder = File("$dataFolderPath/logs")
+        versionedFolder = File("$dataFolderPath/versioned")
+        clientFolder = File("$dataFolderPath/../..")
+
+        val properties = String(File("$dataFolderPath/../../server.properties").readBytes())
+        levelName = properties.split("\n")
+            .map { it.split("=") }
+            .associate { Pair(it[0], it[1]) }["level-name"]
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
