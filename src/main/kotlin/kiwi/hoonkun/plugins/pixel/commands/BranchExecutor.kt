@@ -14,10 +14,11 @@ class BranchExecutor: Executor() {
     }
 
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "argument is missing, branch name must be specified.")
-
         val repo = Entry.repository ?: return invalidRepositoryResult
+
+        if (args.isEmpty()) {
+            return CommandExecuteResult(true, "you are currently in '${repo.branch}' branch")
+        }
 
         try {
             Git(repo).checkout()
