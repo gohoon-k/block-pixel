@@ -17,7 +17,7 @@ class Environment {
             Entry.levelName = "world"
             Entry.logFolder = File("$dataFolder/logs")
 
-            val gitDir = File("${Entry.versionedFolder!!.absolutePath}/.git")
+            val gitDir = File("${Entry.versionedFolder.absolutePath}/.git")
             if (gitDir.exists()) {
                 val repositoryBuilder = FileRepositoryBuilder()
                 repositoryBuilder.gitDir = gitDir
