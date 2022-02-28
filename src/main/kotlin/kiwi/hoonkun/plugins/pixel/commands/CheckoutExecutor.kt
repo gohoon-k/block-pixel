@@ -7,7 +7,7 @@ import org.eclipse.jgit.api.CheckoutResult
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
 
-class CheckoutExecutor: Executor() {
+class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
@@ -29,7 +29,9 @@ class CheckoutExecutor: Executor() {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            WriteWorker.versioned2client(listOf("overworld", "nether", "the_end"))
+            val writeResult = WriteWorker.versioned2client(plugin, listOf("overworld", "nether", "the_end"))
+
+            if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult(exception)
         }

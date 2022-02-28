@@ -7,7 +7,7 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.lib.PersonIdent
 
-class CommitExecutor: Executor() {
+class CommitExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
@@ -19,7 +19,9 @@ class CommitExecutor: Executor() {
         if (args.isEmpty())
             return CommandExecuteResult(false, "cannot commit if message is not specified.")
 
-        WriteWorker.client2versioned(listOf("overworld", "nether", "the_end"))
+        val writeResult = WriteWorker.client2versioned(plugin, listOf("overworld", "nether", "the_end"))
+
+        if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 

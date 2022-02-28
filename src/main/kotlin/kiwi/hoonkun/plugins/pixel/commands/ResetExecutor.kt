@@ -7,7 +7,7 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.api.errors.GitAPIException
 
-class ResetExecutor: Executor() {
+class ResetExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
@@ -32,7 +32,9 @@ class ResetExecutor: Executor() {
             return createGitApiFailedResult(exception)
         }
 
-        WriteWorker.versioned2client(listOf("overworld", "nether", "the_end"))
+        val writeResult = WriteWorker.versioned2client(plugin, listOf("overworld", "nether", "the_end"))
+
+        if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
 
         return CommandExecuteResult(true, "successfully reset commits.")
     }

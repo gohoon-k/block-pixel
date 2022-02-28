@@ -5,44 +5,90 @@ import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegion
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readVersionedRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toVersionedRegions
+
+import org.bukkit.Location
+import org.bukkit.World
+import org.bukkit.WorldCreator
+
 import java.io.File
 
 class WriteWorker {
 
     companion object {
 
+        const val RESULT_OK = "OK"
+
         private val clientDimensions get() = mapOf(
-            "overworld" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}/region",
+            "overworld" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_overworld/region",
             "nether" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_nether/DIM-1/region",
             "the_end" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_the_end/DIM1/region"
         )
 
-        fun client2versioned(dimensions: List<String>): Boolean {
+        fun client2versioned(plugin: Entry, dimensions: List<String>): String {
             dimensions.forEach { dimension ->
-                val path = clientDimensions[dimension] ?: return false
-                val regions = File(path).listFiles() ?: return false
+                val worldName = "${Entry.levelName}_$dimension"
+                val world = plugin.server.getWorld(worldName) ?: return "cannot find world '$worldName'"
+                unload(plugin, world)
+
+                val path = clientDimensions[dimension] ?: return "impossible"
+                val regions = File(path).listFiles() ?: return "cannot find world file '$worldName'"
                 val versioned = ClientRegionFiles(regions).readClientRegions().toVersionedRegions()
                 saveVersioned(dimension, versioned)
+
+                load(plugin, world)
             }
 
-            return true
+            return RESULT_OK
         }
 
-        fun versioned2client(dimensions: List<String>): Boolean {
+        fun versioned2client(plugin: Entry, dimensions: List<String>): String {
             val versionedPath = Entry.versionedFolder.absolutePath
 
             dimensions.forEach { dimension ->
-                val clientDimension = clientDimensions[dimension] ?: return false
-                val versioned = File("$versionedPath/$dimension").listFiles() ?: return false
-                val original = File(clientDimension).listFiles() ?: return false
+                val worldName = "${Entry.levelName}_$dimension"
+                val world = plugin.server.getWorld(worldName) ?: return "cannot find world '$worldName'"
+                unload(plugin, world)
+
+                val clientDimension = clientDimensions[dimension] ?: return "impossible"
+                val versioned = File("$versionedPath/$dimension").listFiles() ?: return "cannot find versioned world file '$dimension'"
+                val original = File(clientDimension).listFiles() ?: return "cannot find world file '$worldName'"
                 val client = VersionedRegionFiles(versioned)
                     .readVersionedRegions()
                     .toClientRegions(ClientRegionFiles(original))
 
                 replaceClient(clientDimension, client)
+
+                load(plugin, world)
             }
 
-            return true
+            return RESULT_OK
+        }
+
+        private fun unload(plugin: Entry, world: World) {
+            plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
+                it.setGravity(false)
+                it.teleport(Location(plugin.void, it.location.x, it.location.y, it.location.z))
+            }
+            world.isAutoSave = false
+            world.save()
+
+            do {
+                val unloaded = plugin.server.unloadWorld(world, true)
+            } while (!unloaded)
+        }
+
+        private fun load(plugin: Entry, world: World) {
+            plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
+                plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
+                    it.teleport(Location(created, it.location.x, it.location.y, it.location.z))
+                    it.setGravity(true)
+                }
+                created.isAutoSave = true
+                created.loadedChunks.forEach { chunk ->
+                    chunk.unload()
+                    chunk.load()
+                }
+            }
         }
 
         private fun saveVersioned(dimension: String, versioned: VersionedRegions) {

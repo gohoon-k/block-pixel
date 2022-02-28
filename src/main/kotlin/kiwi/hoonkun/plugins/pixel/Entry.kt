@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.commands.*
-import org.bukkit.ChatColor
+import org.bukkit.*
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
@@ -28,15 +28,20 @@ class Entry: JavaPlugin() {
 
     private val executors: Map<String, Executor> = mapOf(
         "init" to InitializeExecutor(),
-        "commit" to CommitExecutor(),
-        "discard" to DiscardExecutor(),
-        "reset" to ResetExecutor(),
+        "commit" to CommitExecutor(this),
+        "discard" to DiscardExecutor(this),
+        "reset" to ResetExecutor(this),
         "branch" to BranchExecutor(),
-        "checkout" to CheckoutExecutor(),
+        "checkout" to CheckoutExecutor(this),
         "merge" to MergeExecutor(),
         "list" to ListExecutor(),
-        "undo" to UndoExecutor()
+        "undo" to UndoExecutor(),
+        "tp" to TeleportExecutor(this),
+        "whereis" to WhereIsExecutor(this)
     )
+
+    lateinit var void: World
+    lateinit var overworld: World
 
     override fun onEnable() {
         super.onEnable()
@@ -59,6 +64,36 @@ class Entry: JavaPlugin() {
             repositoryBuilder.gitDir = gitDir
             repository = repositoryBuilder.build()
             logger.log(Level.INFO, "find local git repository, initialized.")
+        }
+
+        void = if (File("${clientFolder.absolutePath}/__void__").exists()) {
+            logger.log(Level.INFO, "creating void world from existing file")
+            server.createWorld(WorldCreator("__void__")) ?: throw Exception("cannot create void world")
+        } else {
+            logger.log(Level.INFO, "creating new void world")
+            WorldCreator("__void__")
+                .type(WorldType.FLAT)
+                .generateStructures(false)
+                .generatorSettings("""{"structures": {"structures": {}}, "layers": [{"block": "air", "height": 1}], "biome":"plains"}""")
+                .createWorld() ?: throw Exception("cannot create void world")
+        }
+
+        val overworldFolder = File("${clientFolder.absolutePath}/${levelName}_overworld")
+        if (!overworldFolder.exists()) {
+            val dummyFiles = File("${clientFolder.absolutePath}/$levelName").listFiles()?.toMutableList() ?: throw Exception("main world not exists")
+            val excludedFolders = arrayOf("advancements", "datapacks", "playerdata", "stats", "session.lock", "uid.dat")
+            dummyFiles.removeIf { excludedFolders.contains(it.name) }
+            dummyFiles.forEach {
+                if (it.isDirectory) it.copyRecursively(File("${overworldFolder.absolutePath}/${it.name}"))
+                else it.copyTo(File("${overworldFolder.absolutePath}/${it.name}"))
+            }
+        }
+
+        overworld = server.createWorld(WorldCreator("${levelName}_overworld")) ?: throw Exception("cannot create overworld")
+
+        server.onlinePlayers.forEach {
+            it.setGravity(true)
+            it.teleport(Location(server.getWorld(levelName)!!, it.location.x, it.location.y, it.location.z))
         }
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
