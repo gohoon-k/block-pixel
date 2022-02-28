@@ -46,18 +46,19 @@ class Entry: JavaPlugin() {
         Entry.dataFolder = dataFolder
         logFolder = File("$dataFolderPath/logs")
         versionedFolder = File("$dataFolderPath/versioned")
-        clientFolder = File("$dataFolderPath/../..")
+        clientFolder = File(dataFolderPath).parentFile.parentFile
 
         val properties = String(File("${clientFolder.absolutePath}/server.properties").readBytes())
         levelName = properties.split("\n")
             .map { it.split("=") }
-            .associate { Pair(it[0], it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
+            .associate { Pair(it[0], if (it.size == 1) null else it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
 
         val gitDir = File("${versionedFolder.absolutePath}/.git")
         if (gitDir.exists()) {
             val repositoryBuilder = FileRepositoryBuilder()
             repositoryBuilder.gitDir = gitDir
             repository = repositoryBuilder.build()
+            logger.log(Level.INFO, "find local git repository, initialized.")
         }
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
