@@ -5,6 +5,7 @@ import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegion
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readVersionedRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toVersionedRegions
+import kotlinx.coroutines.delay
 
 import org.bukkit.Location
 import org.bukkit.World
@@ -24,7 +25,7 @@ class WriteWorker {
             "the_end" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_the_end/DIM1/region"
         )
 
-        fun client2versioned(plugin: Entry, dimensions: List<String>): String {
+        suspend fun client2versioned(plugin: Entry, dimensions: List<String>): String {
             dimensions.forEach { dimension ->
                 val worldName = "${Entry.levelName}_$dimension"
                 val world = plugin.server.getWorld(worldName) ?: return "cannot find world '$worldName'"
@@ -41,7 +42,7 @@ class WriteWorker {
             return RESULT_OK
         }
 
-        fun versioned2client(plugin: Entry, dimensions: List<String>): String {
+        suspend fun versioned2client(plugin: Entry, dimensions: List<String>): String {
             val versionedPath = Entry.versionedFolder.absolutePath
 
             dimensions.forEach { dimension ->
@@ -64,31 +65,44 @@ class WriteWorker {
             return RESULT_OK
         }
 
-        private fun unload(plugin: Entry, world: World) {
-            plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
-                it.setGravity(false)
-                it.teleport(Location(plugin.void, it.location.x, it.location.y, it.location.z))
-            }
-            world.isAutoSave = false
-            world.save()
+        private suspend fun unload(plugin: Entry, world: World) {
+            var unloaded = false
 
-            do {
-                val unloaded = plugin.server.unloadWorld(world, true)
-            } while (!unloaded)
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
+                    it.setGravity(false)
+                    it.teleport(Location(plugin.void, it.location.x, it.location.y, it.location.z))
+                }
+                world.isAutoSave = false
+                world.save()
+
+                do {
+                    unloaded = plugin.server.unloadWorld(world, true)
+                } while (!unloaded)
+            })
+
+            while (!unloaded) { delay(100) }
         }
 
-        private fun load(plugin: Entry, world: World) {
-            plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
-                plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
-                    it.teleport(Location(created, it.location.x, it.location.y, it.location.z))
-                    it.setGravity(true)
+        private suspend fun load(plugin: Entry, world: World) {
+            var loaded = false
+
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
+                    plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
+                        it.teleport(Location(created, it.location.x, it.location.y, it.location.z))
+                        it.setGravity(true)
+                    }
+                    created.isAutoSave = true
+                    created.loadedChunks.forEach { chunk ->
+                        chunk.unload()
+                        chunk.load()
+                    }
+                    loaded = true
                 }
-                created.isAutoSave = true
-                created.loadedChunks.forEach { chunk ->
-                    chunk.unload()
-                    chunk.load()
-                }
-            }
+            })
+
+            while (!loaded) { delay(100) }
         }
 
         private fun saveVersioned(dimension: String, versioned: VersionedRegions) {
