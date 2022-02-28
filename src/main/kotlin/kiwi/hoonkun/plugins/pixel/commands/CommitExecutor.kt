@@ -11,15 +11,20 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<commit_message>")
+        val COMPLETE_LIST = mutableListOf("<commit_message>")
 
     }
 
     override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
-            return CommandExecuteResult(false, "cannot commit if message is not specified.")
+            return CommandExecuteResult(false, "missing arguments. commit target and messages are must be specified.")
 
-        val writeResult = WriteWorker.client2versioned(plugin, listOf("overworld", "nether", "the_end"))
+        if (args.size == 1)
+            return CommandExecuteResult(false, "missing arguments. commit message must be specified.")
+
+        val dimensions = if (args[0] == "all") listOf("overworld", "nether", "the_end") else listOf(args[0])
+
+        val writeResult = WriteWorker.client2versioned(plugin, dimensions)
 
         if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
 
@@ -33,7 +38,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
                 .call()
 
             val commit = git.commit()
-                .setMessage(args.joinToString(" "))
+                .setMessage(args.slice(1 until args.size).joinToString(" "))
                 .setCommitter(PersonIdent(repo))
                 .call()
 
@@ -44,8 +49,9 @@ class CommitExecutor(private val plugin: Entry): Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return when (args.size) {
-            1 -> COMPLETE_LIST_0
+        return when {
+            args.size == 1 -> COMPLETE_LIST_DIMENSIONS
+            args.size > 1 -> COMPLETE_LIST
             else -> COMPLETE_LIST_EMPTY
         }
     }

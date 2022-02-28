@@ -9,6 +9,8 @@ abstract class Executor {
 
         val COMPLETE_LIST_EMPTY = mutableListOf<String>()
 
+        val COMPLETE_LIST_DIMENSIONS = mutableListOf("all", "overworld", "nether", "the_end")
+
     }
 
     data class CommandExecuteResult(
