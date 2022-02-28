@@ -1,4 +1,4 @@
-name: Pixel
+name: pixel
 version: '${project.version}'
 main: kiwi.hoonkun.plugins.pixel.Entry
 api-version: 1.18
