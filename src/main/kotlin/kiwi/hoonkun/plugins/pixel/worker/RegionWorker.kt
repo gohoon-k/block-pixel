@@ -379,6 +379,7 @@ class RegionWorker {
                 return when (type) {
                     TagType.TAG_BYTE -> ByteTag(jsonValue.asByte, jsonName)
                     TagType.TAG_SHORT -> ShortTag(jsonValue.asShort, jsonName)
+                    TagType.TAG_DOUBLE -> DoubleTag(jsonValue.asDouble, jsonName)
                     TagType.TAG_INT -> IntTag(jsonValue.asInt, jsonName)
                     TagType.TAG_LONG -> LongTag(jsonValue.asLong, jsonName)
                     TagType.TAG_FLOAT -> FloatTag(jsonValue.asFloat, jsonName)
@@ -386,7 +387,7 @@ class RegionWorker {
                     TagType.TAG_BYTE_ARRAY -> ByteArrayTag(jsonValue.asJsonArray.map { it.asByte }.toByteArray(), jsonName)
                     TagType.TAG_INT_ARRAY -> IntArrayTag(jsonValue.asJsonArray.map { it.asInt }.toIntArray(), jsonName)
                     TagType.TAG_LONG_ARRAY -> LongArrayTag(jsonValue.asJsonArray.map { it.asLong }.toLongArray(), jsonName)
-                    else -> throw Exception("cannot create tag of compound, list, end in this context")
+                    else -> throw Exception("cannot create tag of compound, list, end in this context with name '$jsonName(${type.name})'")
                 }
             }
 
