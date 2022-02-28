@@ -39,7 +39,7 @@ class CheckoutExecutor: Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            0 -> COMPLETE_LIST_0
+            1 -> COMPLETE_LIST_0
             else -> COMPLETE_LIST_EMPTY
         }
     }
