@@ -10,7 +10,7 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
         val COMPLETE_LIST_1 = mutableListOf("dummy", "overworld")
     }
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing arguments. destination and target must be specified.")
 

@@ -13,7 +13,7 @@ class BranchExecutor: Executor() {
 
     }
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         val repo = Entry.repository ?: return invalidRepositoryResult
 
         if (args.isEmpty()) {

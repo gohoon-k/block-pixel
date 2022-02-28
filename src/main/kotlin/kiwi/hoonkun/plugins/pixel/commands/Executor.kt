@@ -23,7 +23,7 @@ abstract class Executor {
     fun createGitApiFailedResult(exception: GitAPIException) =
         CommandExecuteResult(false, "operation failed with exception: ${exception.message}")
 
-    abstract fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult
+    abstract suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult
 
     abstract fun autoComplete(args: List<String>): MutableList<String>
 

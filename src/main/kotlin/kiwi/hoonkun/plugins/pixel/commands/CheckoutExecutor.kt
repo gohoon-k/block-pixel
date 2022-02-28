@@ -15,7 +15,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     }
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
 

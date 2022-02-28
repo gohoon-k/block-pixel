@@ -4,7 +4,7 @@ import org.bukkit.command.CommandSender
 
 class MergeExecutor: Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         TODO("implement this function")
     }
 

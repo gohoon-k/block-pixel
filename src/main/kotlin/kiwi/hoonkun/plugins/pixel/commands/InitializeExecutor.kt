@@ -7,7 +7,7 @@ import java.io.File
 
 class InitializeExecutor: Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (!Entry.versionedFolder.exists()) Entry.versionedFolder.mkdirs()
 
         val repository = FileRepositoryBuilder.create(File("${Entry.versionedFolder.absolutePath}/.git"))

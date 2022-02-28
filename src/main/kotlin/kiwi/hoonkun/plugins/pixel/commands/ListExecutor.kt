@@ -16,7 +16,7 @@ class ListExecutor: Executor() {
 
     }
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. please specify what to list up.")
 

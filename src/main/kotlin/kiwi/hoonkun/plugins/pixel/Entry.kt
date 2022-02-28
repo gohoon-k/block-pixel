@@ -1,6 +1,10 @@
 package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.commands.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.bukkit.*
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
@@ -42,6 +46,9 @@ class Entry: JavaPlugin() {
 
     lateinit var void: World
     lateinit var overworld: World
+
+    lateinit var scope: CoroutineScope
+    private val job = Job()
 
     override fun onEnable() {
         super.onEnable()
@@ -96,6 +103,8 @@ class Entry: JavaPlugin() {
             it.teleport(Location(server.getWorld(levelName)!!, it.location.x, it.location.y, it.location.z))
         }
 
+        scope = CoroutineScope(job + Dispatchers.IO)
+
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
 
@@ -125,10 +134,13 @@ class Entry: JavaPlugin() {
             sender.sendMessage(ChatColor.RED + "unknown command '${args[0]}'")
             return true
         }
-        val result = executor.exec(sender, remainingArgs)
 
-        if (result.success) sender.sendMessage(result.message)
-        else sender.sendMessage(ChatColor.RED + result.message)
+        scope.launch {
+            val result = executor.exec(sender, remainingArgs)
+
+            if (result.success) sender.sendMessage(result.message)
+            else sender.sendMessage(ChatColor.RED + result.message)
+        }
 
         return true
     }

@@ -6,7 +6,7 @@ import org.bukkit.command.CommandSender
 
 class DiscardExecutor(private val plugin: Entry): Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing argument. discard target must be specified.")
 

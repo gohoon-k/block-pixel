@@ -6,7 +6,7 @@ import org.bukkit.entity.Player
 
 class WhereIsExecutor(private val plugin: Entry): Executor() {
 
-    override fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing argument. target must be specified.")
 
