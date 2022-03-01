@@ -46,6 +46,8 @@ class PaletteWorker {
             val blocksPerLong = Long.SIZE_BITS / bitsPerBlock
             val totalLength = ceil(4096.0f / blocksPerLong).toInt()
 
+            if (isEmpty()) return LongArray(0)
+
             return LongArray(totalLength) { index ->
                 var long = 0L
 
