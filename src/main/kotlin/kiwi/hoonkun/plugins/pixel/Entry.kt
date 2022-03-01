@@ -1,10 +1,7 @@
 package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.commands.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.bukkit.*
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
@@ -47,8 +44,10 @@ class Entry: JavaPlugin() {
     lateinit var void: World
     lateinit var overworld: World
 
-    lateinit var scope: CoroutineScope
+    private lateinit var scope: CoroutineScope
     private val job = Job()
+
+    private var scopeRunning = false
 
     override fun onEnable() {
         super.onEnable()
@@ -135,7 +134,14 @@ class Entry: JavaPlugin() {
             return true
         }
 
+        if (scopeRunning) {
+            sender.sendMessage(ChatColor.YELLOW + "other command is running. please wait until previous command finishes...")
+            return true
+        }
+
         scope.launch {
+            scopeRunning = true
+
             val startTime = System.currentTimeMillis()
 
             val result = executor.exec(sender, remainingArgs)
@@ -144,6 +150,8 @@ class Entry: JavaPlugin() {
 
             if (result.success) sender.sendMessage("${result.message}, in ${endTime - startTime}ms")
             else sender.sendMessage(ChatColor.RED + "${result.message}, in ${endTime - startTime}ms")
+
+            scopeRunning = false
         }
 
         return true
