@@ -288,7 +288,7 @@ class RegionWorker {
                 true,
                 "palette"
             )
-            val dataTag = LongArrayTag(data.toIntArray().pack(palette.size), "data")
+            val dataTag = LongArrayTag(data.pack(palette.size), "data")
 
             val blockStatesTag = CompoundTag(mapOf("palette" to paletteTag, "data" to dataTag), "block_states")
 

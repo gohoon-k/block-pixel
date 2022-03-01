@@ -46,7 +46,7 @@ typealias MutableRegions = MutableMap<RegionLocation, List<Chunk>>
 fun Regions.toMutableRegions() = get.toMutableMap()
 fun MutableRegions.toImmutableRegions() = Regions(toMap())
 typealias BlocksRaw = LongArray
-typealias Blocks = IntArray
+typealias Blocks = List<Int>
 
 data class Chunk(val timestamp: Int, val nbt: CompoundTag)
 fun List<Chunk>.findChunk(x: Int, z: Int): Chunk? = find {
