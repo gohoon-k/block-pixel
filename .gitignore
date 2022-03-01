@@ -114,3 +114,6 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Minecraft file
+*.mca
