@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Blocks
 import kiwi.hoonkun.plugins.pixel.BlocksRaw
 import kiwi.hoonkun.plugins.pixel.nbt.extensions.indent
 import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
+import kotlin.math.ceil
 import kotlin.math.pow
 
 class PaletteWorker {
@@ -22,32 +23,40 @@ class PaletteWorker {
 
         fun BlocksRaw.unpack(paletteSize: Int): Blocks {
             val bitsPerBlock = size(paletteSize)
+            val bitMask = (2.0).pow(bitsPerBlock).toLong() - 1L
+            val blocksPerLong = Long.SIZE_BITS / bitsPerBlock
 
-            return map { long ->
-                val bits = (0 until Long.SIZE_BITS).map { long.takeBit(it) == 1 }
-                bits.chunked(bitsPerBlock)
-                    .filter { it.size == bitsPerBlock }
-                    .map { it.mapIndexed { index, bit -> if (bit) 2.0.pow(index).toInt() else 0 }.sum() }
-                    .toTypedArray()
-            }.toTypedArray().flatten().take(4096).toIntArray()
+            val result = mutableListOf<Int>()
+
+            forEachIndexed { index, long ->
+                var remaining = long
+                for (block in 0 until(Long.SIZE_BITS / bitsPerBlock)) {
+                    result.add(index * blocksPerLong, (remaining and bitMask).toInt())
+                    remaining = remaining shr bitsPerBlock
+
+                    if (result.size == 4096) return@forEachIndexed
+                }
+            }
+
+            return result
         }
 
         fun Blocks.pack(paletteSize: Int): BlocksRaw {
             val bitsPerBlock = size(paletteSize)
             val blocksPerLong = Long.SIZE_BITS / bitsPerBlock
+            val totalLength = ceil(4096.0f / blocksPerLong).toInt()
 
-            val paddings = BooleanArray(Long.SIZE_BITS % bitsPerBlock) { false }.toList()
+            return LongArray(totalLength) { index ->
+                var long = 0L
 
-            return toList().chunked(blocksPerLong).map { ints ->
-                val bits = ints.map { int -> (0 until bitsPerBlock).map { int.takeBit(it) == 1 }.toTypedArray() }
-                    .toTypedArray()
-                    .flatten()
-                    .toMutableList()
-                bits.addAll(paddings)
-                bits.mapIndexed { index, bit ->
-                    if (bit) { if (index == Long.SIZE_BITS - 1) Long.MIN_VALUE else 2.0.pow(index).toLong() } else 0
-                }.sum()
-            }.toLongArray()
+                for (block in index * blocksPerLong until (index + 1) * blocksPerLong) {
+                    if (block >= 4096) break
+                    if (block != index * blocksPerLong) long = long shl bitsPerBlock
+                    long = long or get(block).toLong()
+                }
+
+                long
+            }
         }
 
         private fun size(size: Int): Int {
@@ -58,14 +67,6 @@ class PaletteWorker {
                 result++
             }
             return result
-        }
-
-        private fun Long.takeBit(position: Int): Int {
-            return ((this shr position) and 1).toInt()
-        }
-
-        private fun Int.takeBit(position: Int): Int {
-            return (this shr position) and 1
         }
 
     }
