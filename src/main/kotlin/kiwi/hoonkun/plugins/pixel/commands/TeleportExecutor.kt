@@ -24,10 +24,12 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
         if (destination != "dummy" && destination != "overworld")
             return CommandExecuteResult(false, "invalid argument. destination must be one of 'dummy' or 'overworld'")
 
-        when (destination) {
-            "dummy" -> target.teleport(Location(plugin.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
-            "overworld" -> target.teleport(Location(plugin.overworld, target.location.x, target.location.y, target.location.z))
-        }
+        plugin.server.scheduler.runTask(plugin, Runnable {
+            when (destination) {
+                "dummy" -> target.teleport(Location(plugin.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
+                "overworld" -> target.teleport(Location(plugin.overworld, target.location.x, target.location.y, target.location.z))
+            }
+        })
 
         return CommandExecuteResult(true, "successfully teleported '${args[0]}' to '$destination'")
     }
