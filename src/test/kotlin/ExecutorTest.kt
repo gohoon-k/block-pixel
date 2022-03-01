@@ -43,20 +43,6 @@ class PixelInitializeTest: StringSpec() {
 
 }
 
-class PixelCommitTest: StringSpec() {
-
-    init {
-        Environment.setup()
-
-        "/pixel commit" {
-            val result = CommitExecutor().exec(null, listOf("test commit in ${System.currentTimeMillis()}"))
-            println(result.message)
-            result.success shouldBe true
-        }
-    }
-
-}
-
 class PixelBranchTest: StringSpec() {
 
     init {
@@ -64,48 +50,6 @@ class PixelBranchTest: StringSpec() {
 
         "/pixel branch" {
             val result = BranchExecutor().exec(null, listOf("struct/library"))
-            println(result.message)
-            result.success shouldBe true
-        }
-    }
-
-}
-
-class PixelCheckoutTest: StringSpec() {
-
-    init {
-        Environment.setup()
-
-        "/pixel checkout" {
-            val result = CheckoutExecutor().exec(null, listOf("master"))
-            println(result.message)
-            result.success shouldBe true
-        }
-    }
-
-}
-
-class PixelDiscardTest: StringSpec() {
-
-    init {
-        Environment.setup()
-
-        "/pixel discard" {
-            val result = DiscardExecutor().exec(null, listOf())
-            println(result.message)
-            result.success shouldBe true
-        }
-    }
-
-}
-
-class PixelResetTest: StringSpec() {
-
-    init {
-        Environment.setup()
-
-        "/pixel reset" {
-            val result = ResetExecutor().exec(null, listOf("2"))
             println(result.message)
             result.success shouldBe true
         }
