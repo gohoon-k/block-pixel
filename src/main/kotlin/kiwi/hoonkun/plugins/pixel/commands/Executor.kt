@@ -35,6 +35,8 @@ abstract class Executor {
     fun createGitApiFailedResult(exception: GitAPIException) =
         CommandExecuteResult(false, "operation failed with exception: ${exception.message}")
 
+    fun dimensions(arg: String): List<String> = if (arg == "all") listOf("overworld", "nether", "the_end") else listOf(arg)
+
     suspend fun doIt(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         globalSender = sender
         val result = exec(sender, args)

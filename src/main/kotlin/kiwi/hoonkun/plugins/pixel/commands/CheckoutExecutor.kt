@@ -17,6 +17,9 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
+            return CommandExecuteResult(false, "argument is missing, target dimension must be specified.")
+
+        if (args.size == 1)
             return CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
 
         val repo = Entry.repository ?: return invalidRepositoryResult
@@ -24,26 +27,27 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
         sendTitle("checking out...")
 
         try {
-            val command = Git(repo).checkout().setName(args[0])
+            val command = Git(repo).checkout().setName(args[1])
             command.call()
 
             if (command.result.status != CheckoutResult.Status.OK) {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            val writeResult = WriteWorker.versioned2client(plugin, listOf("overworld", "nether", "the_end"))
+            val writeResult = WriteWorker.versioned2client(plugin, dimensions(args[0]))
 
             if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult(exception)
         }
 
-        return CommandExecuteResult(true, "successfully checkout to '${args[0]}'")
+        return CommandExecuteResult(true, "successfully checkout to '${args[1]}'")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_0
+            1 -> COMPLETE_LIST_DIMENSIONS
+            2 -> COMPLETE_LIST_0
             else -> COMPLETE_LIST_EMPTY
         }
     }

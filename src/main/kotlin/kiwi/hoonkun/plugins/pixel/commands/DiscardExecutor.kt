@@ -10,9 +10,7 @@ class DiscardExecutor(private val plugin: Entry): Executor() {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing argument. discard target must be specified.")
 
-        val dimensions = if (args[0] == "all") listOf("overworld", "nether", "the_end") else listOf(args[0])
-
-        val writeResult = WriteWorker.versioned2client(plugin, dimensions)
+        val writeResult = WriteWorker.versioned2client(plugin, dimensions(args[0]))
 
         if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
         return CommandExecuteResult(true, "successfully discard uncommitted changes")

@@ -16,6 +16,8 @@ class ListExecutor: Executor() {
 
     }
 
+    private val pageSize = 8
+
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. please specify what to list up.")
@@ -44,9 +46,9 @@ class ListExecutor: Executor() {
     private fun printCommits(git: Git, page: Int = 0, sender: CommandSender?) {
         val branch = git.repository.branch
         val commits = git.log().call().toList()
-        val header = "[${page * 10 + 1}-${((page + 1) * 10).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
-        val commitsString = commits.chunked(10)[page].joinToString("\n") {
-            "${SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(Date(it.commitTime * 1000L))}   ${it.name.substring(0, 8)}   ${it.shortMessage}"
+        val header = "[${page * pageSize + 1}-${((page + 1) * pageSize).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
+        val commitsString = commits.chunked(pageSize)[page].joinToString("\n") {
+            "${SimpleDateFormat("yy.MM.dd HH:mm:ss").format(Date(it.commitTime * 1000L))}  ${it.name.substring(0, 7)}  ${it.shortMessage}"
         }
 
         val message = "$header\n$commitsString"
@@ -80,8 +82,8 @@ class ListExecutor: Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            0 -> COMPLETE_LIST_0
-            1 -> if (args[0] == "commits") COMPLETE_LIST_1_WHEN_COMMIT else COMPLETE_LIST_EMPTY
+            1 -> COMPLETE_LIST_0
+            2 -> if (args[0] == "commits") COMPLETE_LIST_1_WHEN_COMMIT else COMPLETE_LIST_EMPTY
             else -> COMPLETE_LIST_EMPTY
         }
     }
