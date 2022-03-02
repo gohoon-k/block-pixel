@@ -11,34 +11,7 @@ data class RegionLocation(val x: Int, val z: Int)
 value class ClientRegionFiles(val get: Array<File>)
 
 @JvmInline
-value class VersionedRegionFiles(val get: Array<File>)
-
-
-@JvmInline
 value class ClientRegions(val get: Map<RegionLocation, ByteArray>)
-
-@JvmInline
-value class VersionedRegions(val get: Map<RegionLocation, VersionedRegion>)
-data class VersionedRegion(val data: String, val types: String)
-data class MutableVersionedRegion(var data: String = "", var types: String = "")
-fun MutableVersionedRegion.toVersionedRegion() = VersionedRegion(data, types)
-
-data class VersionedChunk(
-    val X: Int,
-    val Z: Int,
-    val sections: List<VersionedSection>,
-    val block_entities: List<CompoundTag>,
-    val types: Map<String, Byte>
-)
-data class VersionedSection(
-    val Y: Int,
-    val palette: List<VersionedPalette>,
-    val data: List<Int>
-)
-data class VersionedPalette(
-    val Name: String,
-    val Properties: CompoundTag?
-)
 
 @JvmInline
 value class Regions(val get: Map<RegionLocation, List<Chunk>>)

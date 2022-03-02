@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.WriteWorker
+import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
@@ -21,27 +21,26 @@ class ResetExecutor(private val plugin: Entry): Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
-        val target = args[0].toIntOrNull()
+        val target = args[1].toIntOrNull()
 
         try {
             Git(repo).reset()
                 .setMode(ResetCommand.ResetType.HARD)
-                .setRef(if (target != null && target <= 10) "HEAD~${args[0]}" else args[0])
+                .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
                 .call()
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult(exception)
         }
 
-        val writeResult = WriteWorker.versioned2client(plugin, listOf("overworld", "nether", "the_end"))
-
-        if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
+        PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
 
         return CommandExecuteResult(true, "successfully reset commits.")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_0
+            1 -> COMPLETE_LIST_DIMENSIONS
+            2 -> COMPLETE_LIST_0
             else -> COMPLETE_LIST_EMPTY
         }
     }

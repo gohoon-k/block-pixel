@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.WriteWorker
+import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
 import org.bukkit.command.CommandSender
 
 class DiscardExecutor(private val plugin: Entry): Executor() {
@@ -10,9 +10,7 @@ class DiscardExecutor(private val plugin: Entry): Executor() {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing argument. discard target must be specified.")
 
-        val writeResult = WriteWorker.versioned2client(plugin, dimensions(args[0]))
-
-        if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
+        PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
         return CommandExecuteResult(true, "successfully discard uncommitted changes")
     }
 

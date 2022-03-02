@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.WriteWorker
+import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.CheckoutResult
 import org.eclipse.jgit.api.Git
@@ -24,8 +24,6 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
-        sendTitle("checking out...")
-
         try {
             val command = Git(repo).checkout().setName(args[1])
             command.call()
@@ -34,9 +32,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            val writeResult = WriteWorker.versioned2client(plugin, dimensions(args[0]))
-
-            if (writeResult != WriteWorker.RESULT_OK) return CommandExecuteResult(false, writeResult)
+            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult(exception)
         }
