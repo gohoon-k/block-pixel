@@ -144,12 +144,14 @@ class Entry: JavaPlugin() {
 
             val startTime = System.currentTimeMillis()
 
-            val result = executor.exec(sender, remainingArgs)
+            val result = executor.doIt(sender, remainingArgs)
 
             val endTime = System.currentTimeMillis()
 
             if (result.success) sender.sendMessage("${result.message}, in ${endTime - startTime}ms")
             else sender.sendMessage(ChatColor.RED + "${result.message}, in ${endTime - startTime}ms")
+
+            Executor.sendTitle(" ")
 
             scopeRunning = false
         }

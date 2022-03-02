@@ -21,6 +21,8 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
+        sendTitle("checking out...")
+
         try {
             val command = Git(repo).checkout().setName(args[0])
             command.call()

@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.*
+import kiwi.hoonkun.plugins.pixel.commands.Executor
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readVersionedRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
@@ -86,6 +87,9 @@ class WriteWorker {
 
         private suspend fun load(plugin: Entry, world: World) {
             var loaded = false
+            var waitTime = 0L
+
+            Executor.sendTitle("reloading world, this may take some time.")
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
@@ -102,7 +106,19 @@ class WriteWorker {
                 }
             })
 
-            while (!loaded) { delay(100) }
+            while (!loaded) {
+                delay(100)
+                waitTime += 100
+                if (waitTime == 5000L) {
+                    Executor.sendTitle("I tried to print progress of world loading, but failed...")
+                }
+                if (waitTime == 10000L) {
+                    Executor.sendTitle("How about taking some breaks?")
+                }
+                if (waitTime == 15000L) {
+                    Executor.sendTitle("Wow, its really big world.")
+                }
+            }
         }
 
         private fun saveVersioned(dimension: String, versioned: VersionedRegions) {

@@ -3,6 +3,7 @@ package kiwi.hoonkun.plugins.pixel.worker
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import kiwi.hoonkun.plugins.pixel.*
+import kiwi.hoonkun.plugins.pixel.commands.Executor
 
 import kiwi.hoonkun.plugins.pixel.nbt.AnyTag
 import kiwi.hoonkun.plugins.pixel.nbt.Tag
@@ -32,11 +33,15 @@ class RegionWorker {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
             get.forEach {
+                val start = System.currentTimeMillis()
+
                 val segments = it.name.split(".")
                 val regionX = segments[1].toInt()
                 val regionZ = segments[2].toInt()
 
                 result[RegionLocation(regionX, regionZ)] = it.readBytes()
+
+                Executor.sendTitle("reading client region ${it.name} finished in ${System.currentTimeMillis() - start}ms")
             }
 
             return ClientRegions(result)
@@ -46,6 +51,8 @@ class RegionWorker {
             val temp = mutableMapOf<RegionLocation, MutableVersionedRegion>()
 
             get.forEach {
+                val start = System.currentTimeMillis()
+
                 val segments = it.name.split(".")
                 val regionX = segments[1].toInt()
                 val regionZ = segments[2].toInt()
@@ -57,6 +64,8 @@ class RegionWorker {
                     "t" -> temp[location]!!.types = String(it.readBytes())
                     "d" -> temp[location]!!.data = String(it.readBytes())
                 }
+
+                Executor.sendTitle("reading versioned region ${it.name} finished in ${System.currentTimeMillis() - start}ms")
             }
 
             return VersionedRegions(temp.map { (k, v) -> k to v.toVersionedRegion() }.toMap())
@@ -70,6 +79,7 @@ class RegionWorker {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
             get.entries.forEach { (regionLocation, chunks) ->
+                val regionStart = System.currentTimeMillis()
 
                 val locationHeader = ByteArray(4096)
                 val timestampsHeader = ByteArray(4096)
@@ -106,6 +116,8 @@ class RegionWorker {
                 regionStream.write(stream.toByteArray())
 
                 result[regionLocation] = regionStream.toByteArray()
+
+                Executor.sendTitle("generating client region [${regionLocation.x}, ${regionLocation.z}] finished in ${System.currentTimeMillis() - regionStart}")
             }
 
             return ClientRegions(result)
@@ -115,6 +127,8 @@ class RegionWorker {
             val result = mutableMapOf<RegionLocation, VersionedRegion>()
 
             get.entries.forEach { (location, chunks) ->
+                val regionStart = System.currentTimeMillis()
+
                 val versionedChunks = chunks.map { chunk ->
                     val blockEntities = chunk.nbt["block_entities"]!!.getAs<ListTag>()
 
@@ -146,7 +160,10 @@ class RegionWorker {
                     "[\n${versionedChunks.joinToString(",\n"){ it.data }.indent()}\n]",
                     "[\n${versionedChunks.joinToString(",\n") { it.types }.indent()}\n]"
                 )
+
+                Executor.sendTitle("generating versioned region [${location.x}, ${location.z}] finished in ${System.currentTimeMillis() - regionStart}")
             }
+
             return VersionedRegions(result)
         }
 
@@ -154,6 +171,8 @@ class RegionWorker {
             val result = mutableMapOf<RegionLocation, List<Chunk>>()
 
             get.entries.forEach { (regionLocation, bytes) ->
+                val start = System.currentTimeMillis()
+
                 val chunks = mutableListOf<Chunk>()
 
                 for (m in 0 until 32 * 32) {
@@ -165,6 +184,8 @@ class RegionWorker {
                 }
 
                 result[regionLocation] = chunks
+
+                Executor.sendTitle("generating region [${regionLocation.x}, ${regionLocation.z}] finished in ${System.currentTimeMillis() - start}")
             }
 
             return Regions(result)
@@ -177,6 +198,8 @@ class RegionWorker {
             val typesType = object : TypeToken<List<Map<String, Byte>>>() {}.type
 
             get.entries.forEach { (location, versionedRegion) ->
+                val start = System.currentTimeMillis()
+
                 val blockEntityTypes = Gson().fromJson<List<Map<String, Byte>>>(
                     versionedRegion.types, typesType
                 )
@@ -197,6 +220,8 @@ class RegionWorker {
                     chunk.nbt["block_entities"]!!.getAs<ListTag>().value = versionedChunk.block_entities.toList()
                     chunk
                 }
+
+                Executor.sendTitle("generating versioned region [${location.x}, ${location.z}] finished in ${System.currentTimeMillis() - start}")
             }
             return originalRegions.toImmutableRegions()
         }

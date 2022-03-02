@@ -30,6 +30,8 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
+        sendTitle("region worker finished its work, committing...")
+
         val git = Git(repo)
 
         return try {
