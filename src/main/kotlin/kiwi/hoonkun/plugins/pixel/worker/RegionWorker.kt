@@ -173,11 +173,11 @@ class RegionWorker {
         internal fun VersionedRegions.toRegions(original: ClientRegionFiles): Regions {
             val originalRegions = original.readClientRegions().toRegions().toMutableRegions()
 
-            val chunksType = object : TypeToken<Array<VersionedChunk>>() {}.type
-            val typesType = object : TypeToken<Array<Map<String, Byte>>>() {}.type
+            val chunksType = object : TypeToken<List<VersionedChunk>>() {}.type
+            val typesType = object : TypeToken<List<Map<String, Byte>>>() {}.type
 
             get.entries.forEach { (location, versionedRegion) ->
-                val blockEntityTypes = Gson().fromJson<Array<Map<String, Byte>>>(
+                val blockEntityTypes = Gson().fromJson<List<Map<String, Byte>>>(
                     versionedRegion.types, typesType
                 )
 
@@ -185,7 +185,7 @@ class RegionWorker {
                     .registerTypeAdapter(chunksType, GitChunkDeserializer(blockEntityTypes))
                     .create()
 
-                val versionedChunks = gson.fromJson<Array<VersionedChunk>>(versionedRegion.data, chunksType)
+                val versionedChunks = gson.fromJson<List<VersionedChunk>>(versionedRegion.data, chunksType)
 
                 val region = originalRegions[location] ?: return@forEach
 
@@ -296,14 +296,14 @@ class RegionWorker {
         }
 
         class GitChunkDeserializer(
-            private val types: Array<Map<String, Byte>>,
-        ): JsonDeserializer<Array<VersionedChunk>> {
+            private val types: List<Map<String, Byte>>
+        ): JsonDeserializer<List<VersionedChunk>> {
 
             override fun deserialize(
                 json: JsonElement?,
                 typeOfT: Type?,
                 context: JsonDeserializationContext?
-            ): Array<VersionedChunk> {
+            ): List<VersionedChunk> {
                 json ?: throw Exception("cannot find json element of block entity")
 
                 if (!json.isJsonArray) throw Exception("json element 'block_entity' is not a json array")
@@ -324,7 +324,7 @@ class RegionWorker {
                     val blockEntities = BlockEntityDeserializer(types[index]).deserialize(chunkItem["block_entities"], null, null)
 
                     VersionedChunk(x, z, sections, blockEntities, types[index])
-                }.toTypedArray()
+                }
             }
 
         }
