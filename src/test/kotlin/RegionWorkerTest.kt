@@ -9,7 +9,6 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.IntTag
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toRegions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toVersionedRegions
 import java.io.File
 
 class RegionWorkerTest: StringSpec() {
@@ -40,37 +39,6 @@ class RegionWorkerTest: StringSpec() {
             version2 shouldNotBe null
 
             version2 shouldBe version1
-        }
-
-        "convert between region and versioned region" {
-            val regions1 = ClientRegionFiles(testRegions).readClientRegions().toRegions()
-
-            val versionedRegions1 = regions1.toVersionedRegions()
-
-            val regions2 = versionedRegions1.toRegions(ClientRegionFiles(testRegions))
-
-            val versionedRegions2 = regions2.toVersionedRegions()
-
-            versionedRegions2.get[testRegionLocation]!!.data shouldBe versionedRegions1.get[testRegionLocation]!!.data
-        }
-
-        "convert between client region and versioned region" {
-            val regions = ClientRegionFiles(testRegions).readClientRegions().toRegions()
-
-            val regions1 = Regions(mapOf(testRegionLocation to listOf(regions.get[testRegionLocation]!![0])))
-
-            val client1 = regions1.toClientRegions()
-            val versioned1 = client1.toVersionedRegions()
-            val client2 = versioned1.toClientRegions(ClientRegionFiles(testRegions))
-            val versioned2 = client2.toVersionedRegions()
-            val client3 = versioned2.toClientRegions(ClientRegionFiles(testRegions))
-            val versioned3 = client3.toVersionedRegions()
-
-            versioned1.get[testRegionLocation]!!.data shouldBe versioned3.get[testRegionLocation]!!.data
-            versioned1.get[testRegionLocation]!!.data shouldBe versioned2.get[testRegionLocation]!!.data
-            versioned2.get[testRegionLocation]!!.data shouldBe versioned3.get[testRegionLocation]!!.data
-            
-            client2.get[testRegionLocation] shouldBe client3.get[testRegionLocation]
         }
 
     }
