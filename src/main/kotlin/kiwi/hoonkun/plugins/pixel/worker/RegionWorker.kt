@@ -7,6 +7,8 @@ import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.extensions.byte
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
+import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
+import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -40,7 +42,7 @@ class RegionWorker {
             return ClientRegions(result)
         }
 
-        internal fun Regions.toClientRegions(): ClientRegions {
+        fun Regions.toClientRegions(): ClientRegions {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
             get.entries.forEach { (regionLocation, chunks) ->
@@ -88,7 +90,7 @@ class RegionWorker {
             return ClientRegions(result)
         }
 
-        internal fun ClientRegions.toRegions(): Regions {
+        fun ClientRegions.toRegions(): Regions {
             val result = mutableMapOf<RegionLocation, List<Chunk>>()
 
             get.entries.forEach { (regionLocation, bytes) ->
@@ -110,6 +112,154 @@ class RegionWorker {
             }
 
             return Regions(result)
+        }
+
+        fun merge(from: Regions, into: Regions, ancestor: Regions, mode: MergeMode): Regions {
+            val merged = mutableMapOf<RegionLocation, List<Chunk>>()
+
+            val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
+            new.forEach { merged[it.key] = it.value }
+
+            already.map { it.key }
+                .forEach { location ->
+                    Executor.sendTitle("merging region[${location.x}, ${location.z}]")
+
+                    val mergedChunks = mutableListOf<Chunk>()
+                    associateChunk(
+                        from.get[location],
+                        into.get[location],
+                        ancestor.get[location]
+                    ).forEach { associatedMap ->
+                        val associated = associatedMap.value
+                        Executor.sendTitle("merging region[${location.x}, ${location.z}].chunk[${associatedMap.key.x}, ${associatedMap.key.z}]")
+                        val fromC = associated.from
+                        val intoC = associated.into
+                        val anceC = associated.ancestor
+                        if (fromC == null && intoC != null) {
+                            mergedChunks.add(intoC)
+                        } else if (fromC != null && intoC != null) {
+                            val resultC = Chunk(intoC.timestamp, intoC.nbt.clone(intoC.nbt.name))
+                            (0 until intoC.sections.size).forEach { sectionIndex ->
+                                val fromS = fromC.sections[sectionIndex]
+                                val intoS = intoC.sections[sectionIndex]
+                                val anceS = anceC?.sections?.get(sectionIndex)
+
+                                val fromP = fromS.blockStates.palette
+                                val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
+
+                                val intoP = intoS.blockStates.palette
+                                val intoM = intoS.blockStates.data.unpack(intoP.size).map { intoP[it] }
+
+                                val resultP = mutableListOf<Palette>()
+                                val resultE = mutableListOf<BlockEntity>()
+                                val intoE = intoC.blockEntities.toMutableList()
+                                val fromE = fromC.blockEntities.toMutableList()
+
+                                val anceP = anceS?.blockStates?.palette
+                                val anceM = if (anceP != null) anceS.blockStates.data.unpack(anceP.size).map { anceP[it] } else null
+
+                                (0 until 4096).forEach { block ->
+                                    val (x, y, z) = coordinate(intoC.location, intoS.y, block)
+
+                                    val applyIt: (applyB: Palette, applyE: List<BlockEntity>, revertE: MutableList<BlockEntity>) -> Unit =
+                                        { applyB, applyE, revertE ->
+                                            resultP.add(applyB)
+                                            applyE.find { it.x == x && it.z == z && it.y == y }
+                                                ?.also { resultE.add(it) }
+                                            revertE.removeIf { it.x == x && it.z == z && it.y == y }
+                                        }
+
+                                    if (anceS != null && anceP != null && anceM != null) {
+                                        val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
+                                        val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
+                                        val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
+                                        if (fromB != intoB && fromB != anceB && intoB != anceB) {
+                                            if (mode == MergeMode.KEEP) {
+                                                applyIt(intoB, intoE, fromE)
+                                            } else if (mode == MergeMode.REPLACE) {
+                                                applyIt(fromB, fromE, intoE)
+                                            }
+                                        } else if (fromB == anceB && fromB != intoB || intoB == anceB && intoB != fromB) {
+                                            if (fromB == anceB) {
+                                                applyIt(intoB, intoE, fromE)
+                                            } else if (intoB == anceB) {
+                                                applyIt(fromB, fromE, intoE)
+                                            }
+                                        } else {
+                                            applyIt(intoB, intoE, fromE)
+                                        }
+                                    } else {
+                                        val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
+                                        val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
+
+                                        if (fromB != intoB) {
+                                            if (mode == MergeMode.KEEP) {
+                                                resultP.add(intoB)
+                                            } else if (mode == MergeMode.REPLACE) {
+                                                resultP.add(fromB)
+                                            }
+                                        } else {
+                                            applyIt(intoB, intoE, fromE)
+                                        }
+                                    }
+                                }
+                                val resultPS = resultP.toSet().toList()
+                                val resultD =
+                                    if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
+                                    else LongArray(0)
+
+                                resultC.sections[sectionIndex].blockStates.data = resultD
+                                resultC.sections[sectionIndex].blockStates.palette = resultPS
+                                resultC.blockEntities = resultE
+                            }
+
+                            mergedChunks.add(resultC)
+                        }
+                    }
+                    merged[location] = mergedChunks
+                }
+
+            Executor.sendTitle("all regions merged")
+
+            return Regions(merged)
+        }
+
+        private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
+            val a = mutableListOf<T>()
+            val b = mutableListOf<T>()
+            forEach {
+                if (criteria(it)) a.add(it)
+                else b.add(it)
+            }
+            return Pair(a, b)
+        }
+
+        private fun associateChunk(from: List<Chunk>?, into: List<Chunk>?, ancestor: List<Chunk>?): Map<ChunkLocation, AssociatedChunk> {
+            val chunkMap = mutableMapOf<ChunkLocation, AssociatedChunk>()
+            from?.forEach {
+                if (!chunkMap.containsKey(it.location)) chunkMap[it.location] = AssociatedChunk()
+                chunkMap.getValue(it.location).from = it
+            }
+            into?.forEach {
+                if (!chunkMap.containsKey(it.location)) chunkMap[it.location] = AssociatedChunk()
+                chunkMap.getValue(it.location).into = it
+            }
+            ancestor?.forEach {
+                if (!chunkMap.containsKey(it.location)) chunkMap[it.location] = AssociatedChunk()
+                chunkMap.getValue(it.location).ancestor = it
+            }
+
+            return chunkMap
+        }
+
+        private data class AssociatedChunk(var from: Chunk? = null, var into: Chunk? = null, var ancestor: Chunk? = null)
+
+        private fun coordinate(location: ChunkLocation, sectionY: Byte, blockIndex: Int): Triple<Int, Int, Int> {
+            return Triple(
+                location.x * 16 + blockIndex % 16,
+                location.z * 16 + (blockIndex / 16) % 16,
+                sectionY * 16 + (blockIndex / (16 * 16)) % 16
+            )
         }
 
         private fun decompress(region: ByteArray, headerOffset: Int): Pair<Int, ByteBuffer>? {
@@ -182,6 +332,10 @@ class RegionWorker {
             while (size > index * 4096) index++
 
             return index * 4096
+        }
+
+        enum class MergeMode {
+            KEEP, REPLACE
         }
 
     }

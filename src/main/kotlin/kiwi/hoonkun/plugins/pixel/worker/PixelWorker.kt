@@ -1,6 +1,11 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
+import kiwi.hoonkun.plugins.pixel.ClientRegionFiles
+import kiwi.hoonkun.plugins.pixel.ClientRegions
 import kiwi.hoonkun.plugins.pixel.Entry
+import kiwi.hoonkun.plugins.pixel.Regions
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toRegions
 import java.io.File
 
 class PixelWorker {
@@ -18,6 +23,24 @@ class PixelWorker {
             "nether" to "${Entry.versionedFolder.absolutePath}/nether",
             "the_end" to "${Entry.versionedFolder.absolutePath}/the_end"
         )
+
+        fun read(dimensions: List<String>): List<Regions> {
+            val result = mutableListOf<Regions>()
+            dimensions.forEach { dimension ->
+                val dimensionPath = versionedDimension[dimension] ?: throw Exception("invalid dimension")
+                val files = File(dimensionPath).listFiles() ?: return@forEach
+                result.add(ClientRegionFiles(files).readClientRegions().toRegions())
+            }
+            return result
+        }
+
+        fun ClientRegions.write(dimension: String) {
+            val path = versionedDimension[dimension] ?: throw Exception("invalid dimension")
+            get.entries.forEach { (location, bytes) ->
+                val file = File("$path/r.${location.x}.${location.z}.mca")
+                file.writeBytes(bytes)
+            }
+        }
 
         suspend fun addToVersionControl(plugin: Entry, dimensions: List<String>) {
             dimensions.forEach { dimension ->

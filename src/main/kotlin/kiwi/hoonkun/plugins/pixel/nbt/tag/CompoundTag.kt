@@ -9,7 +9,7 @@ import kiwi.hoonkun.plugins.pixel.nbt.extensions.putString
 import kiwi.hoonkun.plugins.pixel.nbt.extensions.string
 import java.nio.ByteBuffer
 
-typealias Compound = Map<String, AnyTag>
+typealias Compound = MutableMap<String, AnyTag>
 
 class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_COMPOUND, name) {
 
@@ -21,9 +21,12 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
         } + Byte.SIZE_BYTES
 
     operator fun get(key: String) = value[key]
+    operator fun set(key: String, nv: AnyTag) {
+        value[key] = nv
+    }
 
     constructor(value: Compound, name: String? = null): this(name) {
-        this.value = value.map { (name, tag) -> name to tag.ensureName(name) }.toMap()
+        this.value = value.map { (name, tag) -> name to tag.ensureName(name) }.toMap().toMutableMap()
     }
 
     constructor(buffer: ByteBuffer, name: String? = null): this(name) {
@@ -65,7 +68,7 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
         write(buffer)
     }
 
-    override fun clone(name: String?) = CompoundTag(value.map { (name, tag) -> name to tag.clone(name) }.toMap(), name)
+    override fun clone(name: String?) = CompoundTag(value.map { (name, tag) -> name to tag.clone(name) }.toMap().toMutableMap(), name)
 
     override fun valueToString(): String {
         val result = "{\n${value.entries.sortedBy { it.key }.joinToString(",\n") { "${it.value}" }}\n}"

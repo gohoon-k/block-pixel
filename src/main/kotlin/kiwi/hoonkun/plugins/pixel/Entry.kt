@@ -34,7 +34,7 @@ class Entry: JavaPlugin() {
         "reset" to ResetExecutor(this),
         "branch" to BranchExecutor(),
         "checkout" to CheckoutExecutor(this),
-        "merge" to MergeExecutor(),
+        "merge" to MergeExecutor(this),
         "list" to ListExecutor(),
         "undo" to UndoExecutor(),
         "tp" to TeleportExecutor(this),
@@ -142,16 +142,21 @@ class Entry: JavaPlugin() {
         scope.launch {
             scopeRunning = true
 
-            val startTime = System.currentTimeMillis()
+            try {
+                val startTime = System.currentTimeMillis()
 
-            val result = executor.doIt(sender, remainingArgs)
+                val result = executor.doIt(sender, remainingArgs)
 
-            val endTime = System.currentTimeMillis()
+                val endTime = System.currentTimeMillis()
 
-            if (result.success) sender.sendMessage("${result.message}, in ${endTime - startTime}ms")
-            else sender.sendMessage(ChatColor.RED + "${result.message}, in ${endTime - startTime}ms")
+                if (result.success) sender.sendMessage("${result.message}, in ${endTime - startTime}ms")
+                else sender.sendMessage(ChatColor.RED + "${result.message}, in ${endTime - startTime}ms")
 
-            Executor.sendTitle(" ")
+                Executor.sendTitle(" ")
+            } catch (e: Exception) {
+                scopeRunning = false
+                e.printStackTrace()
+            }
 
             scopeRunning = false
         }
