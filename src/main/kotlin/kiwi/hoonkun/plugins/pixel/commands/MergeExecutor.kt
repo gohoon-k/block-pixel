@@ -107,15 +107,20 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         initialBranch = null
 
         dimensions.forEachIndexed { index, dimension ->
+            sendTitle("start merging '$dimension'...")
             delay(2000)
             RegionWorker.merge(from[index], into[index], ancestor[index], mode).toClientRegions().write(dimension)
             sendTitle("merging '$dimension' finished.")
         }
 
+        val actualSource =
+            if (fromC.name.startsWith(source)) source
+            else "$source(${fromC.name.substring(0 until 7)})"
+
         val message = if (dimensions.size != 1) {
-            "all dimensions from '$source' into '$branch'"
+            "all dimensions from '$actualSource' into '$branch'"
         } else {
-            "${dimensions[0]} from '$source' into '$branch'"
+            "${dimensions[0]} from '$actualSource' into '$branch'"
         }
 
         git.add()
