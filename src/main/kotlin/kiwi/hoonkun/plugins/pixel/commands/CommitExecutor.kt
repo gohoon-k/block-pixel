@@ -22,13 +22,13 @@ class CommitExecutor(private val plugin: Entry): Executor() {
         if (args.size == 1)
             return CommandExecuteResult(false, "missing arguments. commit message must be specified.")
 
-        PixelWorker.addToVersionControl(plugin, dimensions(args[0]))
-
         val repo = Entry.repository ?: return invalidRepositoryResult
 
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")
             return CommandExecuteResult(false, "it seems that head is detached from any other branches.\nplease create new branch here, before commit.")
+
+        PixelWorker.addToVersionControl(plugin, dimensions(args[0]))
 
         val git = Git(repo)
 
