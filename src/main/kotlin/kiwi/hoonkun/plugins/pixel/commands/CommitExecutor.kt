@@ -42,7 +42,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
                 .setCommitter(PersonIdent(repo))
                 .call()
 
-            CommandExecuteResult(true, "successfully committed with hash '${commit.name}'")
+            CommandExecuteResult(true, "successfully committed with hash '${commit.name.substring(0 until 7)}'")
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("commit", exception)
         }
