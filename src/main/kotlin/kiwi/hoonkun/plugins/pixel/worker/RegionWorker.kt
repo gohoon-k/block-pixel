@@ -143,6 +143,7 @@ class RegionWorker {
                             val resultE = mutableListOf<BlockEntity>()
                             val intoE = intoC.blockEntities
                             val fromE = fromC.blockEntities
+                            val anceE = anceC?.blockEntities
 
                             (0 until intoC.sections.size).forEach { sectionIndex ->
                                 val fromS = fromC.sections[sectionIndex]
@@ -169,17 +170,36 @@ class RegionWorker {
                                             ?.also { resultE.add(it) }
                                     }
 
+                                    val blockEquals: (Palette, BlockEntity?, Palette, BlockEntity?) -> Boolean = e@ { p1, be1, p2, be2 ->
+                                        if (p1 != p2) return@e false
+                                        if (be1 != null || be2 != null) return@e false
+
+                                        return@e true
+                                    }
+
+                                    val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
+                                    val fromBE = fromE.find { it.x == x && it.z == z && it.y == y }
+                                    val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
+                                    val intoBE = intoE.find { it.x == x && it.z == z && it.y == y }
+
                                     if (anceS != null && anceP != null && anceM != null) {
-                                        val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
-                                        val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
                                         val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
-                                        if (fromB != intoB && fromB != anceB && intoB != anceB) {
+                                        val anceBE = anceE?.find { it.x == x && it.z == z && it.y == y }
+
+                                        if (
+                                            !blockEquals(fromB, fromBE, intoB, intoBE) &&
+                                            !blockEquals(fromB, fromBE, anceB, anceBE) &&
+                                            !blockEquals(anceB, anceBE, intoB, intoBE)
+                                        ) {
                                             if (mode == MergeMode.KEEP) {
                                                 applyIt(intoB, intoE)
                                             } else if (mode == MergeMode.REPLACE) {
                                                 applyIt(fromB, fromE)
                                             }
-                                        } else if (fromB == anceB && fromB != intoB || intoB == anceB && intoB != fromB) {
+                                        } else if (
+                                            blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
+                                            blockEquals(anceB, anceBE, intoB, intoBE) && !blockEquals(fromB, fromBE, intoB, intoBE)
+                                        ) {
                                             if (fromB == anceB) {
                                                 applyIt(intoB, intoE)
                                             } else if (intoB == anceB) {
@@ -189,10 +209,7 @@ class RegionWorker {
                                             applyIt(intoB, intoE)
                                         }
                                     } else {
-                                        val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
-                                        val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
-
-                                        if (fromB != intoB) {
+                                        if (!blockEquals(fromB, fromBE, intoB, intoBE)) {
                                             if (mode == MergeMode.KEEP) {
                                                 applyIt(intoB, intoE)
                                             } else if (mode == MergeMode.REPLACE) {
