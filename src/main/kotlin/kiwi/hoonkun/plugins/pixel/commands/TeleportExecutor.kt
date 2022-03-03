@@ -31,7 +31,7 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
             }
         })
 
-        return CommandExecuteResult(true, "successfully teleported '${args[0]}' to '$destination'")
+        return CommandExecuteResult(true, "${g}successfully teleported '$w${args[0]}$g' to '$w$destination$g'")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

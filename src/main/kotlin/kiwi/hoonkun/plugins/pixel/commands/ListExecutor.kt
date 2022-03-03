@@ -1,6 +1,8 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import kiwi.hoonkun.plugins.pixel.utils.TextWidthUtils.Companion.ellipsizeChat
+import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
@@ -27,7 +29,7 @@ class ListExecutor: Executor() {
             return CommandExecuteResult(false, "invalid argument. only 'commits' and 'branches' are allowed to list up.")
 
         val page = if (args.size == 2) {
-            args[0].toIntOrNull() ?: return CommandExecuteResult(false, "invalid argument. page argument must be integer.")
+            args[1].toIntOrNull() ?: return CommandExecuteResult(false, "invalid argument. page argument must be integer.")
         } else {
             0
         }
@@ -41,7 +43,7 @@ class ListExecutor: Executor() {
             else -> ""
         }
 
-        return CommandExecuteResult(true, "successfully queried list of '${args[0]}'")
+        return CommandExecuteResult(true, lists, false)
     }
 
     private fun printCommits(git: Git, page: Int = 0): String {

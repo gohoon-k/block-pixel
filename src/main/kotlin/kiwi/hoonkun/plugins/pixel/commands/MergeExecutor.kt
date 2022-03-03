@@ -143,9 +143,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else "$source(${fromC.name.substring(0 until 7)})"
 
         val message = if (dimensions.size != 1) {
-            "all dimensions from '$actualSource' into '$branch'"
+            "'$actualSource' into '$branch' of all dimensions"
         } else {
-            "${dimensions[0]} from '$actualSource' into '$branch'"
+            "'$actualSource' into '$branch' of ${dimensions[0]}"
         }
 
         git.add()

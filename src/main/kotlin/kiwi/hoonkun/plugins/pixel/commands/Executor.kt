@@ -33,7 +33,8 @@ abstract class Executor {
 
     data class CommandExecuteResult(
         val success: Boolean,
-        val message: String
+        val message: String,
+        val recordTime: Boolean = true
     )
 
     val invalidRepositoryResult = CommandExecuteResult(false, "repository is not initialized!\nplease run '/pixel init'.")

@@ -34,7 +34,7 @@ class ResetExecutor(private val plugin: Entry): Executor() {
 
         PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
 
-        return CommandExecuteResult(true, "successfully reset commits.")
+        return CommandExecuteResult(true, "${g}successfully reset commits.")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

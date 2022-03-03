@@ -11,7 +11,7 @@ class DiscardExecutor(private val plugin: Entry): Executor() {
             return CommandExecuteResult(false, "missing argument. discard target must be specified.")
 
         PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
-        return CommandExecuteResult(true, "successfully discard uncommitted changes")
+        return CommandExecuteResult(true, "${g}successfully discard uncommitted changes")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

@@ -17,7 +17,7 @@ class BranchExecutor: Executor() {
         val repo = Entry.repository ?: return invalidRepositoryResult
 
         if (args.isEmpty()) {
-            return CommandExecuteResult(true, "you are currently in '${repo.branch}' branch")
+            return CommandExecuteResult(true, "${g}you are currently in '$w${repo.branch}$g' branch", false)
         }
 
         try {
@@ -29,7 +29,7 @@ class BranchExecutor: Executor() {
             return createGitApiFailedResult("branch", exception)
         }
 
-        return CommandExecuteResult(true, "successfully created new branch '${args[0]}'")
+        return CommandExecuteResult(true, "${g}successfully created new branch '$w${args[0]}$g'", false)
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

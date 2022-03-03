@@ -43,7 +43,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
             return createGitApiFailedResult("checkout", exception)
         }
 
-        return CommandExecuteResult(true, "successfully checkout to '${args[1]}'")
+        return CommandExecuteResult(true, "${g}successfully checkout to '$w${args[1]}$g'", false)
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

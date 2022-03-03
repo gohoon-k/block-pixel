@@ -17,7 +17,7 @@ class WhereIsExecutor(private val plugin: Entry): Executor() {
         }
 
         val where = if (target.world.name == Entry.levelName) "dummy" else target.world.name.replace("${Entry.levelName}_", "")
-        return CommandExecuteResult(true, "player '${args[0]}' is in '$where'")
+        return CommandExecuteResult(true, "${g}player '$w${args[0]}$g' is in '$w$where$g'")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

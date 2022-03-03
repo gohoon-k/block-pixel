@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
@@ -15,7 +16,7 @@ class InitializeExecutor: Executor() {
 
         Entry.repository = repository
 
-        return CommandExecuteResult(true, "successfully init repository!")
+        return CommandExecuteResult(true, "${ChatColor.DARK_GREEN}successfully init repository!")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
