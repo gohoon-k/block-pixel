@@ -50,6 +50,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
         return when (args.size) {
             1 -> COMPLETE_LIST_DIMENSIONS
             2 -> COMPLETE_LIST_0
+            3 -> COMPLETE_LIST_COMMITTED
             else -> COMPLETE_LIST_EMPTY
         }
     }

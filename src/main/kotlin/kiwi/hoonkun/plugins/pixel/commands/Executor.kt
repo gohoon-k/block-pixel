@@ -14,6 +14,8 @@ abstract class Executor {
 
         val COMPLETE_LIST_DIMENSIONS = mutableListOf("all", "overworld", "nether", "the_end")
 
+        val COMPLETE_LIST_COMMITTED = mutableListOf("<all_change_committed>")
+
         private var globalSender: CommandSender? = null
 
         fun sendTitle(message: String) {

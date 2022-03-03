@@ -20,7 +20,6 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         val COMPLETE_LIST_1 = mutableListOf("<branch>", "<commit_hash>")
         val COMPLETE_LIST_3 = mutableListOf("keep", "replace")
-        val COMPLETE_LIST_4 = mutableListOf("<all_change_committed>")
 
     }
 
@@ -76,7 +75,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             1 -> COMPLETE_LIST_DIMENSIONS
             2 -> COMPLETE_LIST_1
             3 -> COMPLETE_LIST_3
-            4 -> COMPLETE_LIST_4
+            4 -> COMPLETE_LIST_COMMITTED
             else -> COMPLETE_LIST_EMPTY
         }
     }
