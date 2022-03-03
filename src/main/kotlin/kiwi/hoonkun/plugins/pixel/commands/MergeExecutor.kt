@@ -55,7 +55,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
             initialBranch = null
 
-            if (e is InvalidMergeOperationException || e is NullMergeBaseException) {
+            if (e is MergeException) {
                 return CommandExecuteResult(false, e.message!!)
             }
 
@@ -75,14 +75,20 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     private suspend fun merge(source: String, dimensions: List<String>, mode: RegionWorker.Companion.MergeMode): String {
         val git = Git(Entry.repository)
 
-        val intoCommit = git.log().setMaxCount(1).call().toList()[0]
+        val intoCommits = git.log().setMaxCount(1).call().toList()
+        val intoCommit =
+            if (intoCommits.isNotEmpty()) intoCommits[0]
+            else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
         val into = PixelWorker.read(dimensions)
 
         git.checkout().setName(source).call()
 
-        val fromCommit = git.log().setMaxCount(1).call().toList()[0]
+        val fromCommits = git.log().setMaxCount(1).call().toList()
+        val fromCommit =
+            if (fromCommits.isNotEmpty()) fromCommits[0]
+            else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
         val from = PixelWorker.read(dimensions)
@@ -140,8 +146,12 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         return "committed successful merge of $message"
     }
 
-    class NullMergeBaseException: Exception("merge failed, cannot find valid merge base.")
+    open class MergeException(val m: String): Exception(m)
 
-    class InvalidMergeOperationException: Exception("invalid merge operation. source commit equals with into commit.")
+    class NullMergeBaseException: MergeException("merge failed, cannot find valid merge base.")
+
+    class InvalidMergeOperationException: MergeException("invalid merge operation. source commit equals with into commit.")
+
+    class NoValidCommitsException: MergeException("there are no commits exists. did you make any commits?")
 
 }
