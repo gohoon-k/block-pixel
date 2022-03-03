@@ -29,7 +29,7 @@ class ResetExecutor(private val plugin: Entry): Executor() {
                 .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
                 .call()
         } catch (exception: GitAPIException) {
-            return createGitApiFailedResult(exception)
+            return createGitApiFailedResult("reset", exception)
         }
 
         PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
