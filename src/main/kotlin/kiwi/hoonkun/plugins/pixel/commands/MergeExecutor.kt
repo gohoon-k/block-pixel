@@ -9,7 +9,6 @@ import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.PersonIdent
-import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
 
@@ -56,6 +55,10 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
             initialBranch = null
 
+            if (e is InvalidMergeOperationException || e is NullMergeBaseException) {
+                return CommandExecuteResult(false, e.message!!)
+            }
+
             return CommandExecuteResult(false, "failed to merge because of exception.")
         }
     }
@@ -88,10 +91,12 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val intoC = commitLookup.lookupCommit(intoCommit.id)
         val fromC = commitLookup.lookupCommit(fromCommit.id)
 
+        if (intoC.name == fromC.name) throw InvalidMergeOperationException()
+
         val walk = RevWalk(git.repository)
         walk.revFilter = RevFilter.MERGE_BASE
         walk.markStart(listOf(intoC, fromC))
-        val mergeBase: RevCommit = walk.next()
+        val mergeBase = walk.next() ?: throw NullMergeBaseException()
 
         git.checkout().setName(mergeBase.name).call()
 
@@ -134,5 +139,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         return "committed successful merge of $message"
     }
+
+    class NullMergeBaseException: Exception("merge failed, cannot find valid merge base.")
+
+    class InvalidMergeOperationException: Exception("invalid merge operation. source commit equals with into commit.")
 
 }
