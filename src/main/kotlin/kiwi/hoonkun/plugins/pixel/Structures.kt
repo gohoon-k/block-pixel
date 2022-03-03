@@ -27,7 +27,7 @@ data class Chunk(val timestamp: Int, val nbt: CompoundTag) {
     var blockEntities
         get() = nbt["block_entities"]!!.getAs<ListTag>().value.map { BlockEntity(it.getAs()) }
         set(value) {
-            nbt["block_entities"] = ListTag(TagType.TAG_COMPOUND, value.map { nbt }, true, "block_entities")
+            nbt["block_entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "block_entities")
         }
 }
 

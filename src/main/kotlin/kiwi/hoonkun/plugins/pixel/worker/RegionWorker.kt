@@ -139,6 +139,11 @@ class RegionWorker {
                             mergedChunks.add(intoC)
                         } else if (fromC != null && intoC != null) {
                             val resultC = Chunk(intoC.timestamp, intoC.nbt.clone(intoC.nbt.name))
+
+                            val resultE = mutableListOf<BlockEntity>()
+                            val intoE = intoC.blockEntities
+                            val fromE = fromC.blockEntities
+
                             (0 until intoC.sections.size).forEach { sectionIndex ->
                                 val fromS = fromC.sections[sectionIndex]
                                 val intoS = intoC.sections[sectionIndex]
@@ -150,24 +155,19 @@ class RegionWorker {
                                 val intoP = intoS.blockStates.palette
                                 val intoM = intoS.blockStates.data.unpack(intoP.size).map { intoP[it] }
 
-                                val resultP = mutableListOf<Palette>()
-                                val resultE = mutableListOf<BlockEntity>()
-                                val intoE = intoC.blockEntities.toMutableList()
-                                val fromE = fromC.blockEntities.toMutableList()
-
                                 val anceP = anceS?.blockStates?.palette
                                 val anceM = if (anceP != null) anceS.blockStates.data.unpack(anceP.size).map { anceP[it] } else null
+
+                                val resultP = mutableListOf<Palette>()
 
                                 (0 until 4096).forEach { block ->
                                     val (x, y, z) = coordinate(intoC.location, intoS.y, block)
 
-                                    val applyIt: (applyB: Palette, applyE: List<BlockEntity>, revertE: MutableList<BlockEntity>) -> Unit =
-                                        { applyB, applyE, revertE ->
-                                            resultP.add(applyB)
-                                            applyE.find { it.x == x && it.z == z && it.y == y }
-                                                ?.also { resultE.add(it) }
-                                            revertE.removeIf { it.x == x && it.z == z && it.y == y }
-                                        }
+                                    val applyIt: (Palette, List<BlockEntity>) -> Unit = { applyB, applyE ->
+                                        resultP.add(applyB)
+                                        applyE.find { it.x == x && it.z == z && it.y == y }
+                                            ?.also { resultE.add(it) }
+                                    }
 
                                     if (anceS != null && anceP != null && anceM != null) {
                                         val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
@@ -175,18 +175,18 @@ class RegionWorker {
                                         val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
                                         if (fromB != intoB && fromB != anceB && intoB != anceB) {
                                             if (mode == MergeMode.KEEP) {
-                                                applyIt(intoB, intoE, fromE)
+                                                applyIt(intoB, intoE)
                                             } else if (mode == MergeMode.REPLACE) {
-                                                applyIt(fromB, fromE, intoE)
+                                                applyIt(fromB, fromE)
                                             }
                                         } else if (fromB == anceB && fromB != intoB || intoB == anceB && intoB != fromB) {
                                             if (fromB == anceB) {
-                                                applyIt(intoB, intoE, fromE)
+                                                applyIt(intoB, intoE)
                                             } else if (intoB == anceB) {
-                                                applyIt(fromB, fromE, intoE)
+                                                applyIt(fromB, fromE)
                                             }
                                         } else {
-                                            applyIt(intoB, intoE, fromE)
+                                            applyIt(intoB, intoE)
                                         }
                                     } else {
                                         val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
@@ -194,12 +194,12 @@ class RegionWorker {
 
                                         if (fromB != intoB) {
                                             if (mode == MergeMode.KEEP) {
-                                                resultP.add(intoB)
+                                                applyIt(intoB, intoE)
                                             } else if (mode == MergeMode.REPLACE) {
-                                                resultP.add(fromB)
+                                                applyIt(fromB, fromE)
                                             }
                                         } else {
-                                            applyIt(intoB, intoE, fromE)
+                                            applyIt(intoB, intoE)
                                         }
                                     }
                                 }
@@ -210,8 +210,9 @@ class RegionWorker {
 
                                 resultC.sections[sectionIndex].blockStates.data = resultD
                                 resultC.sections[sectionIndex].blockStates.palette = resultPS
-                                resultC.blockEntities = resultE
                             }
+
+                            resultC.blockEntities = resultE
 
                             mergedChunks.add(resultC)
                         }
@@ -255,10 +256,13 @@ class RegionWorker {
         private data class AssociatedChunk(var from: Chunk? = null, var into: Chunk? = null, var ancestor: Chunk? = null)
 
         private fun coordinate(location: ChunkLocation, sectionY: Byte, blockIndex: Int): Triple<Int, Int, Int> {
+            val x = location.x
+            val y = sectionY.toInt()
+            val z = location.z
             return Triple(
-                location.x * 16 + blockIndex % 16,
-                location.z * 16 + (blockIndex / 16) % 16,
-                sectionY * 16 + (blockIndex / (16 * 16)) % 16
+                x * 16 + (blockIndex % 16),
+                y * 16 + ((blockIndex / (16 * 16)) % 16),
+                z * 16 + ((blockIndex / 16) % 16)
             )
         }
 
