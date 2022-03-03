@@ -39,7 +39,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             RegionWorker.Companion.MergeMode.KEEP
         else if (args[2] == "replace")
             RegionWorker.Companion.MergeMode.REPLACE
-        else throw Exception("invalid merge mode!")
+        else return CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
 
         initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
 
