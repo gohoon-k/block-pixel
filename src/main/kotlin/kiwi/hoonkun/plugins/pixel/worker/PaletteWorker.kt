@@ -2,8 +2,6 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.Blocks
 import kiwi.hoonkun.plugins.pixel.BlocksRaw
-import kiwi.hoonkun.plugins.pixel.nbt.extensions.indent
-import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
 import kotlin.math.ceil
 import kotlin.math.pow
 
@@ -11,30 +9,19 @@ class PaletteWorker {
 
     companion object {
 
-        fun LongArrayTag.toUnpackedString(paletteSize: Int): String {
-            val unpacked = value.unpack(paletteSize)
-            var result = "["
-            if (unpacked.isNotEmpty()) {
-                result += "\n${unpacked.joinToString(",").indent()}\n"
-            }
-            result += "]"
-            return result
-        }
-
         fun BlocksRaw.unpack(paletteSize: Int): Blocks {
             val bitsPerBlock = size(paletteSize)
             val bitMask = (2.0).pow(bitsPerBlock).toLong() - 1L
-            val blocksPerLong = Long.SIZE_BITS / bitsPerBlock
 
             val result = mutableListOf<Int>()
 
-            forEachIndexed { index, long ->
+            forEach { long ->
                 var remaining = long
                 for (block in 0 until(Long.SIZE_BITS / bitsPerBlock)) {
-                    result.add(index * blocksPerLong, (remaining and bitMask).toInt())
+                    result.add((remaining and bitMask).toInt())
                     remaining = remaining shr bitsPerBlock
 
-                    if (result.size == 4096) return@forEachIndexed
+                    if (result.size == 4096) return@forEach
                 }
             }
 
@@ -51,9 +38,9 @@ class PaletteWorker {
             return LongArray(totalLength) { index ->
                 var long = 0L
 
-                for (block in index * blocksPerLong until (index + 1) * blocksPerLong) {
-                    if (block >= 4096) break
-                    if (block != index * blocksPerLong) long = long shl bitsPerBlock
+                for (block in (index + 1) * blocksPerLong downToExclusive index * blocksPerLong) {
+                    if (block >= 4096) continue
+                    if (block != (index + 1) * blocksPerLong) long = long shl bitsPerBlock
                     long = long or get(block).toLong()
                 }
 
@@ -69,6 +56,10 @@ class PaletteWorker {
                 result++
             }
             return result
+        }
+
+        private infix fun Int.downToExclusive(other: Int): IntProgression {
+            return (this - 1).downTo(other)
         }
 
     }
