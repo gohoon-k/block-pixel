@@ -54,10 +54,12 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         } catch (e: Exception) {
             e.printStackTrace()
 
-            if (initialBranch != null)
+            val branch = initialBranch
+
+            if (branch != null)
                 Git(Entry.repository)
                     .checkout()
-                    .setName(initialBranch)
+                    .setName(branch)
                     .call()
 
             initialBranch = null
