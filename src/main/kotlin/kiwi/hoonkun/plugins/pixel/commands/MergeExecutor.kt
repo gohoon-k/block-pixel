@@ -64,7 +64,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
                 return CommandExecuteResult(false, e.message!!)
             }
 
-            return CommandExecuteResult(false, "failed to merge because of exception.")
+            return CommandExecuteResult(false, "failed to merge because of internal exception.")
         }
     }
 
