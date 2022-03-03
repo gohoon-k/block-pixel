@@ -111,3 +111,6 @@ test-splits/
 
 # Minecraft file
 *.mca
+
+# Test Workspace
+TestWorkspace.kt
