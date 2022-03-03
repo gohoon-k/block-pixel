@@ -26,6 +26,10 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
         val repo = Entry.repository ?: return invalidRepositoryResult
 
+        val head = repo.refDatabase.findRef("HEAD")
+        if (head.target.name == "HEAD")
+            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\nplease create new branch here, before commit.")
+
         val git = Git(repo)
 
         return try {
