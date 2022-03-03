@@ -22,6 +22,12 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
         if (args.size == 1)
             return CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
 
+        if (args.size == 2)
+            return CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before checkout.\nif yes, pass 'true' to last argument.")
+
+        if (args[2] != "true")
+            return uncommittedChangesResult
+
         val repo = Entry.repository ?: return invalidRepositoryResult
 
         try {

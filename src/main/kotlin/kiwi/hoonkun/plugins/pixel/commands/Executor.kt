@@ -31,6 +31,7 @@ abstract class Executor {
     )
 
     val invalidRepositoryResult = CommandExecuteResult(false, "repository is not initialized!\nplease run '/pixel init'.")
+    val uncommittedChangesResult = CommandExecuteResult(false, "you specified that you didn't committed changes. please commit them first.")
 
     fun createGitApiFailedResult(exception: GitAPIException) =
         CommandExecuteResult(false, "operation failed with exception: ${exception.message}")
