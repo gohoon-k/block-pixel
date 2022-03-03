@@ -118,7 +118,8 @@ class RegionWorker {
             val merged = mutableMapOf<RegionLocation, List<Chunk>>()
 
             val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
-            new.forEach { merged[it.key] = it.value }
+            if (mode == MergeMode.REPLACE)
+                new.forEach { merged[it.key] = it.value }
 
             already.map { it.key }
                 .forEach { location ->
