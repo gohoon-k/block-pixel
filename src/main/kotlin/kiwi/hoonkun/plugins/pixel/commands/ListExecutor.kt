@@ -16,7 +16,7 @@ class ListExecutor: Executor() {
 
     }
 
-    private val pageSize = 8
+    private val pageSize = 9
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.isEmpty())
@@ -35,48 +35,45 @@ class ListExecutor: Executor() {
         val repo = Entry.repository ?: return invalidRepositoryResult
         val git = Git(repo)
 
-        when (what) {
-            "commits" -> printCommits(git, page, sender)
-            "branches" -> printBranches(git, sender)
+        val lists = when (what) {
+            "commits" -> printCommits(git, page)
+            "branches" -> printBranches(git)
+            else -> ""
         }
 
         return CommandExecuteResult(true, "successfully queried list of '${args[0]}'")
     }
 
-    private fun printCommits(git: Git, page: Int = 0, sender: CommandSender?) {
+    private fun printCommits(git: Git, page: Int = 0): String {
         val commits = git.log().call().toList()
 
         if (commits.isEmpty()) {
-            "there are no commits in this repository yet.".also {
-                if (sender != null) sender.sendMessage(it)
-                else println(it)
-            }
-            return
+            return "${g}there are no commits in this repository yet."
         }
 
         val branch = git.repository.branch
-        val header = "[${page * pageSize + 1}-${((page + 1) * pageSize).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
+
+        val start = page * pageSize + 1
+        val end = ((page + 1) * pageSize).coerceAtMost(commits.size)
+        val header = "$g[$w$start-$end of ${commits.size} commits ${g}in branch $w'$branch'$g]"
         val commitsString = commits.chunked(pageSize)[page].joinToString("\n") {
-            "${SimpleDateFormat("yy.MM.dd HH:mm:ss").format(Date(it.commitTime * 1000L))}  ${it.name.substring(0, 7)}  ${it.shortMessage}"
+            val date = SimpleDateFormat("MM.dd HH:mm").format(Date(it.commitTime * 1000L))
+            val hash = it.name.substring(0, 7)
+            val msg = it.shortMessage
+            "${ChatColor.YELLOW}$date ${ChatColor.GOLD}$hash ${ChatColor.WHITE}$msg".ellipsizeChat()
         }
 
-        val message = "$header\n$commitsString"
-
-        if (sender != null) sender.sendMessage(message)
-        else println(message)
+        return "$header\n$commitsString"
     }
 
-    private fun printBranches(git: Git, sender: CommandSender?) {
+    private fun printBranches(git: Git): String {
         val branches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call()
         val list = branches.joinToString("\n") {
             val indexes = it.name.findIndexes('/')
             if (indexes.isEmpty()) it.name else it.name.substring(indexes[1] + 1, it.name.length)
         }
 
-        val message = "[total ${branches.size} branches]\n$list"
-
-        if (sender != null) sender.sendMessage(message)
-        else println(message)
+        return "$g[total $w${branches.size} ${g}branches]$w\n$list"
     }
 
     private fun String.findIndexes(char: Char): List<Int> {
