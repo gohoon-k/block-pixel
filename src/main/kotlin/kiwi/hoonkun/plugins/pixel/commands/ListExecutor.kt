@@ -44,8 +44,17 @@ class ListExecutor: Executor() {
     }
 
     private fun printCommits(git: Git, page: Int = 0, sender: CommandSender?) {
-        val branch = git.repository.branch
         val commits = git.log().call().toList()
+
+        if (commits.isEmpty()) {
+            "there are no commits in this repository yet.".also {
+                if (sender != null) sender.sendMessage(it)
+                else println(it)
+            }
+            return
+        }
+
+        val branch = git.repository.branch
         val header = "[${page * pageSize + 1}-${((page + 1) * pageSize).coerceAtMost(commits.size)} of ${commits.size} commits in branch '$branch']"
         val commitsString = commits.chunked(pageSize)[page].joinToString("\n") {
             "${SimpleDateFormat("yy.MM.dd HH:mm:ss").format(Date(it.commitTime * 1000L))}  ${it.name.substring(0, 7)}  ${it.shortMessage}"
