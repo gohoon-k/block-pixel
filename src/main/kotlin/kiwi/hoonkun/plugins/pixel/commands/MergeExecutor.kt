@@ -133,7 +133,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         dimensions.forEachIndexed { index, dimension ->
             sendTitle("start merging '$dimension'...")
-            delay(2000)
+            delay(1000)
             RegionWorker.merge(from[index], into[index], ancestor[index], mode).toClientRegions().write(dimension)
             sendTitle("merging '$dimension' finished.")
         }
