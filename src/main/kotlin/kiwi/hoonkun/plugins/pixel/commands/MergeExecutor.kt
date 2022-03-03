@@ -20,6 +20,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         val COMPLETE_LIST_1 = mutableListOf("<branch>", "<commit_hash>")
         val COMPLETE_LIST_3 = mutableListOf("keep", "replace")
+        val COMPLETE_LIST_4 = mutableListOf("<all_change_committed>")
 
     }
 
@@ -28,6 +29,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (args.size < 3)
             return CommandExecuteResult(false, "missing arguments. target world, merge source, merge mode must be specified.")
+
+        if (args.size < 4)
+            return CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before merging.\nif yes, pass 'true' to last argument.")
 
         val dimensions = dimensions(args[0])
         val from = args[1]
@@ -69,6 +73,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             1 -> COMPLETE_LIST_DIMENSIONS
             2 -> COMPLETE_LIST_1
             3 -> COMPLETE_LIST_3
+            4 -> COMPLETE_LIST_4
             else -> COMPLETE_LIST_EMPTY
         }
     }
