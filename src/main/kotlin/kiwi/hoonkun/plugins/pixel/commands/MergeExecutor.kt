@@ -8,6 +8,7 @@ import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
@@ -83,7 +84,11 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         sendTitle("reading current regions...")
         val into = PixelWorker.read(dimensions)
 
-        git.checkout().setName(source).call()
+        try {
+            git.checkout().setName(source).call()
+        } catch (e: GitAPIException) {
+            throw UnknownSourceException(source)
+        }
 
         val fromCommits = git.log().setMaxCount(1).call().toList()
         val fromCommit =
@@ -148,10 +153,12 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
     open class MergeException(val m: String): Exception(m)
 
+    class UnknownSourceException(source: String): MergeException("merge failed, unknown source with given name '$source'")
+
     class NullMergeBaseException: MergeException("merge failed, cannot find valid merge base.")
 
     class InvalidMergeOperationException: MergeException("invalid merge operation. source commit equals with into commit.")
 
-    class NoValidCommitsException: MergeException("there are no commits exists. did you make any commits?")
+    class NoValidCommitsException: MergeException("merge failed, there are no commits exists.\ndid you make any commits?")
 
 }
