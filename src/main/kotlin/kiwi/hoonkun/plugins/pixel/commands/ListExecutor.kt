@@ -70,7 +70,7 @@ class ListExecutor: Executor() {
         val branches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call()
         val list = branches.joinToString("\n") {
             val indexes = it.name.findIndexes('/')
-            it.name.substring(indexes[1] + 1, it.name.length)
+            if (indexes.isEmpty()) it.name else it.name.substring(indexes[1] + 1, it.name.length)
         }
 
         val message = "[total ${branches.size} branches]\n$list"
