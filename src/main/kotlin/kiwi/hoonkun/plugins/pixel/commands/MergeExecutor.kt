@@ -33,6 +33,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         if (args.size < 4)
             return CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before merging.\nif yes, pass 'true' to last argument.")
 
+        if (args[3] != "true")
+            return CommandExecuteResult(false, "you specified that you didn't committed changes. please commit them first.")
+
         val dimensions = dimensions(args[0])
         val from = args[1]
         val mode = if (args[2] == "keep")
