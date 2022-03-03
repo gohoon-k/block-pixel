@@ -26,7 +26,7 @@ class BranchExecutor: Executor() {
                 .setCreateBranch(true)
                 .call()
         } catch (exception: GitAPIException) {
-            return createGitApiFailedResult(exception)
+            return createGitApiFailedResult("branch", exception)
         }
 
         return CommandExecuteResult(true, "successfully created new branch '${args[0]}'")

@@ -40,7 +40,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
             CommandExecuteResult(true, "successfully committed with hash '${commit.name}'")
         } catch (exception: GitAPIException) {
-            createGitApiFailedResult(exception)
+            return createGitApiFailedResult("commit", exception)
         }
     }
 
