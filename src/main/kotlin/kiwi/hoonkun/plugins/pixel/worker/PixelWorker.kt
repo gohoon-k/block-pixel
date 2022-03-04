@@ -64,7 +64,10 @@ class PixelWorker {
             val toPath = (if (!replace) versionedDimension else clientDimensions)[dimension]
                 ?: throw Exception("invalid dimension '$dimension'")
 
-            val fromFiles = File(fromPath).listFiles() ?: throw Exception("cannot find region files of dimension '$dimension'")
+            val fromDirectory = File(fromPath)
+            if (!fromDirectory.exists()) fromDirectory.mkdirs()
+
+            val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find region files of dimension '$dimension'")
             val toDirectory = File(toPath)
             if (!toDirectory.exists()) toDirectory.mkdirs()
             fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
