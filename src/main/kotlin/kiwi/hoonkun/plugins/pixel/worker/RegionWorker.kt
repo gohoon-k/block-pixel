@@ -122,7 +122,7 @@ class RegionWorker {
 
             already.map { it.key }
                 .forEach { location ->
-                    Executor.sendTitle("merging region[${location.x}, ${location.z}]")
+                    Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
                     val mergedChunks = mutableListOf<Chunk>()
                     associateChunk(
@@ -131,7 +131,7 @@ class RegionWorker {
                         ancestor.get[location]
                     ).forEach { associatedMap ->
                         val associated = associatedMap.value
-                        Executor.sendTitle("merging region[${location.x}, ${location.z}].chunk[${associatedMap.key.x}, ${associatedMap.key.z}]")
+                        Executor.sendTitle("merging region[${location.x}][${location.z}].chunk[${associatedMap.key.x}][${associatedMap.key.z}]")
                         val fromC = associated.from
                         val intoC = associated.into
 
