@@ -28,7 +28,11 @@ class CommitExecutor(private val plugin: Entry): Executor() {
         if (head.target.name == "HEAD")
             return CommandExecuteResult(false, "it seems that head is detached from any other branches.\nplease create new branch here, before commit.")
 
-        PixelWorker.addToVersionControl(plugin, dimensions(args[0]))
+        try {
+            PixelWorker.addToVersionControl(plugin, dimensions(args[0]))
+        } catch (exception: UnknownDimensionException) {
+            return createDimensionExceptionResult(exception)
+        }
 
         val git = Git(repo)
 

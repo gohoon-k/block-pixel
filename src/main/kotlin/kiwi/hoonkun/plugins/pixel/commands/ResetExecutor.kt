@@ -24,15 +24,19 @@ class ResetExecutor(private val plugin: Entry): Executor() {
         val target = args[1].toIntOrNull()
 
         try {
+            val dimensions = dimensions(args[0])
+
             Git(repo).reset()
                 .setMode(ResetCommand.ResetType.HARD)
                 .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
                 .call()
+
+            PixelWorker.replaceFromVersionControl(plugin, dimensions)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("reset", exception)
+        } catch (exception: UnknownDimensionException) {
+            return createDimensionExceptionResult(exception)
         }
-
-        PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
 
         return CommandExecuteResult(true, "${g}successfully reset commits.")
     }

@@ -10,7 +10,11 @@ class DiscardExecutor(private val plugin: Entry): Executor() {
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing argument. discard target must be specified.")
 
-        PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+        try {
+            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+        } catch (exception: UnknownDimensionException) {
+            return createDimensionExceptionResult(exception)
+        }
         return CommandExecuteResult(true, "${g}successfully discard uncommitted changes")
     }
 

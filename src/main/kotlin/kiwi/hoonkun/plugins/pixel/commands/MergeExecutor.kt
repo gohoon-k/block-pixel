@@ -35,22 +35,24 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         if (args[3] != "true")
             return uncommittedChangesResult
 
-        val dimensions = dimensions(args[0])
-        val from = args[1]
-        val mode = if (args[2] == "keep")
-            RegionWorker.Companion.MergeMode.KEEP
-        else if (args[2] == "replace")
-            RegionWorker.Companion.MergeMode.REPLACE
-        else return CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
-
-        initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
-
         try {
+            val dimensions = dimensions(args[0])
+            val from = args[1]
+            val mode = if (args[2] == "keep")
+                RegionWorker.Companion.MergeMode.KEEP
+            else if (args[2] == "replace")
+                RegionWorker.Companion.MergeMode.REPLACE
+            else return CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
+
+            initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
+
             val message = merge(from, dimensions, mode)
             sendTitle("finished merging, reloading world...")
             PixelWorker.replaceFromVersionControl(plugin, dimensions)
 
             return CommandExecuteResult(true, message)
+        } catch (exception: UnknownDimensionException) {
+            return createDimensionExceptionResult(exception)
         } catch (e: Exception) {
             e.printStackTrace()
 

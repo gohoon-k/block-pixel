@@ -41,6 +41,8 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
             PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("checkout", exception)
+        } catch (exception: UnknownDimensionException) {
+            return createDimensionExceptionResult(exception)
         }
 
         return CommandExecuteResult(true, "${g}successfully checkout to '$w${args[1]}$g'", false)

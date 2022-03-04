@@ -149,7 +149,7 @@ class Entry: JavaPlugin() {
 
                 val endTime = System.currentTimeMillis()
 
-                if (result.success) sender.sendMessage("${result.message}${if (result.recordTime) ", in ${endTime - startTime}ms" else ""}")
+                if (result.success) sender.sendMessage("${result.message}${if (result.recordTime) "${ChatColor.DARK_GRAY}, in ${endTime - startTime}ms" else ""}")
                 else sender.sendMessage(ChatColor.RED + result.message)
 
                 Executor.sendTitle(" ")

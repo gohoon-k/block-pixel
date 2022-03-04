@@ -29,6 +29,8 @@ abstract class Executor {
         val g = ChatColor.GRAY
         val w = ChatColor.WHITE
 
+        private val allDimensions = listOf("overworld", "nether", "the_end")
+
     }
 
     data class CommandExecuteResult(
@@ -40,10 +42,16 @@ abstract class Executor {
     val invalidRepositoryResult = CommandExecuteResult(false, "repository is not initialized!\nplease run '/pixel init'.")
     val uncommittedChangesResult = CommandExecuteResult(false, "you specified that you didn't committed changes. please commit them first.")
 
-    fun createGitApiFailedResult(operation: String, exception: GitAPIException) =
+    fun createGitApiFailedResult(operation: String, exception: GitAPIException): CommandExecuteResult =
         CommandExecuteResult(false, "failed to $operation because of exception\n${exception.message}")
 
-    fun dimensions(arg: String): List<String> = if (arg == "all") listOf("overworld", "nether", "the_end") else listOf(arg)
+    fun createDimensionExceptionResult(e: UnknownDimensionException): CommandExecuteResult =
+        CommandExecuteResult(false, e.message!!)
+
+    fun dimensions(arg: String): List<String> =
+        if (arg == "all") allDimensions
+        else if (allDimensions.contains(arg)) listOf(arg)
+        else throw UnknownDimensionException(arg)
 
     suspend fun doIt(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         globalSender = sender
@@ -56,5 +64,7 @@ abstract class Executor {
     abstract suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult
 
     abstract fun autoComplete(args: List<String>): MutableList<String>
+
+    class UnknownDimensionException(dimension: String): Exception("unknown dimension '$dimension'")
 
 }
