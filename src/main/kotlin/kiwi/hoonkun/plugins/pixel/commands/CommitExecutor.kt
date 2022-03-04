@@ -26,7 +26,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")
-            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\nplease create new branch here, before commit.")
+            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before commit.")
 
         try {
             PixelWorker.addToVersionControl(plugin, dimensions(args[0]))

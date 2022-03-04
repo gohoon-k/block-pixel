@@ -42,6 +42,10 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         if (args[3] != "true")
             return uncommittedChangesResult
 
+        val head = repo.refDatabase.findRef("HEAD")
+        if (head.target.name == "HEAD")
+            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before merge.")
+
         try {
             val dimensions = dimensions(args[0])
             val from = args[1]
