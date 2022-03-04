@@ -16,6 +16,8 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val repo = Entry.repository ?: return invalidRepositoryResult
+
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing, target dimension must be specified.")
 
@@ -27,8 +29,6 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
         if (args[2] != "true")
             return uncommittedChangesResult
-
-        val repo = Entry.repository ?: return invalidRepositoryResult
 
         try {
             val command = Git(repo).checkout().setName(args[1])

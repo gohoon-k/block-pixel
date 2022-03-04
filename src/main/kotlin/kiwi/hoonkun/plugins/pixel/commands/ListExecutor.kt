@@ -21,6 +21,8 @@ class ListExecutor: Executor() {
     private val pageSize = 9
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val repo = Entry.repository ?: return invalidRepositoryResult
+
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. please specify what to list up.")
 
@@ -34,7 +36,6 @@ class ListExecutor: Executor() {
             0
         }
 
-        val repo = Entry.repository ?: return invalidRepositoryResult
         val git = Git(repo)
 
         val lists = when (what) {

@@ -16,10 +16,10 @@ class ResetExecutor(private val plugin: Entry): Executor() {
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val repo = Entry.repository ?: return invalidRepositoryResult
+
         if (args.isEmpty())
             return CommandExecuteResult(false, "argument is missing. back steps or commit name must be specified.")
-
-        val repo = Entry.repository ?: return invalidRepositoryResult
 
         val target = args[1].toIntOrNull()
 

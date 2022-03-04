@@ -16,13 +16,13 @@ class CommitExecutor(private val plugin: Entry): Executor() {
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val repo = Entry.repository ?: return invalidRepositoryResult
+
         if (args.isEmpty())
             return CommandExecuteResult(false, "missing arguments. commit target and messages are must be specified.")
 
         if (args.size == 1)
             return CommandExecuteResult(false, "missing arguments. commit message must be specified.")
-
-        val repo = Entry.repository ?: return invalidRepositoryResult
 
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")

@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.lib.PersonIdent
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
 
@@ -30,6 +31,8 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     private var initialBranch: String? = null
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val repo = Entry.repository ?: return invalidRepositoryResult
+
         if (args.size < 3)
             return CommandExecuteResult(false, "missing arguments. target world, merge source, merge mode must be specified.")
 
@@ -50,7 +53,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
             initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
 
-            val message = merge(from, dimensions, mode)
+            val message = merge(repo, from, dimensions, mode)
             sendTitle("finished merging, reloading world...")
             PixelWorker.replaceFromVersionControl(plugin, dimensions)
 
@@ -91,8 +94,8 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         }
     }
 
-    private suspend fun merge(source: String, dimensions: List<String>, mode: RegionWorker.Companion.MergeMode): String {
-        val git = Git(Entry.repository)
+    private suspend fun merge(repo: Repository, source: String, dimensions: List<String>, mode: RegionWorker.Companion.MergeMode): String {
+        val git = Git(repo)
 
         val intoCommits = git.log().setMaxCount(1).call().toList()
         val intoCommit =
