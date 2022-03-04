@@ -186,10 +186,11 @@ class RegionWorker {
                 (0 until 4096).forEach { block ->
                     val (x, y, z) = coordinate(intoChunk.location, intoS.y, block)
 
-                    val applyIt: (Palette, List<BlockEntity>) -> Unit = { applyB, applyE ->
+                    val applyIt: (Palette, List<BlockEntity>) -> Palette = apply@{ applyB, applyE ->
                         resultP.add(applyB)
                         applyE.find { it.x == x && it.z == z && it.y == y }
                             ?.also { resultE.add(it) }
+                        return@apply applyB
                     }
 
                     val blockEquals: (Palette, BlockEntity?, Palette, BlockEntity?) -> Boolean = e@ { p1, be1, p2, be2 ->
@@ -207,15 +208,14 @@ class RegionWorker {
                     val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
                     val anceBE = anceE.find { it.x == x && it.z == z && it.y == y }
 
-                    if (
+                    val appliedBlock = if (
                         !blockEquals(fromB, fromBE, intoB, intoBE) &&
                         !blockEquals(fromB, fromBE, anceB, anceBE) &&
                         !blockEquals(anceB, anceBE, intoB, intoBE)
                     ) {
-                        if (mode == MergeMode.KEEP) {
-                            applyIt(intoB, intoE)
-                        } else if (mode == MergeMode.REPLACE) {
-                            applyIt(fromB, fromE)
+                        when (mode) {
+                            MergeMode.KEEP -> applyIt(intoB, intoE)
+                            MergeMode.REPLACE -> applyIt(fromB, fromE)
                         }
                     } else if (
                         blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
@@ -223,11 +223,15 @@ class RegionWorker {
                     ) {
                         if (fromB == anceB) {
                             applyIt(intoB, intoE)
-                        } else if (intoB == anceB) {
+                        } else {
                             applyIt(fromB, fromE)
                         }
                     } else {
                         applyIt(intoB, intoE)
+                    }
+
+                    if (WorldLoader.lightSourceBlocks.contains(appliedBlock.name)) {
+                        WorldLoader.registerLightSourceLocation(Triple(x, y, z))
                     }
                 }
                 val resultPS = resultP.toSet().toList()
