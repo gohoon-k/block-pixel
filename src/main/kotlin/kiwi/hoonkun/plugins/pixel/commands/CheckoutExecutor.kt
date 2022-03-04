@@ -45,7 +45,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
             return createDimensionExceptionResult(exception)
         }
 
-        return CommandExecuteResult(true, "${g}successfully checkout to '$w${args[1]}$g'", false)
+        return CommandExecuteResult(true, "${g}successfully checkout to '$w${args[1]}$g'")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

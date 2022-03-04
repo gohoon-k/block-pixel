@@ -165,9 +165,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else "$source(${fromC.name.substring(0 until 7)})"
 
         val message = if (dimensions.size != 1) {
-            "'$actualSource' into '$branch' of all dimensions"
+            "'$w$actualSource$g' into '$w$branch$g' of ${w}all dimensions$g"
         } else {
-            "'$actualSource' into '$branch' of ${dimensions[0]}"
+            "'$w$actualSource$g' into '$w$branch$g' of $w${dimensions[0]}$g"
         }
 
         git.add()
@@ -179,7 +179,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             .setCommitter(PersonIdent(git.repository))
             .call()
 
-        return "committed successful merge of $message"
+        return "${g}committed successful merge of $message"
     }
 
     open class MergeException(val m: String): Exception(m)
