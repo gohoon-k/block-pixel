@@ -21,6 +21,7 @@ class WorldLoader {
         )
 
         val lightSourceBlocks = listOf(
+            "minecraft:beacon",
             "minecraft:campfire",
             "minecraft:cauldron",
             "minecraft:conduit",
