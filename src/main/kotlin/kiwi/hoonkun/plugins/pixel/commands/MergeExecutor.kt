@@ -92,6 +92,8 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             if (intoCommits.isNotEmpty()) intoCommits[0]
             else throw NoValidCommitsException()
 
+        val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
+
         sendTitle("reading current regions...")
         val into = PixelWorker.read(dimensions)
 
@@ -118,7 +120,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val walk = RevWalk(git.repository)
         walk.revFilter = RevFilter.MERGE_BASE
         walk.markStart(listOf(intoC, fromC))
-        val mergeBase = walk.next() ?: throw NullMergeBaseException()
+        val mergeBase = walk.next() ?: if(intoCommitIsOnlyCommit) intoCommit else throw NullMergeBaseException()
 
         git.checkout().setName(mergeBase.name).call()
 
