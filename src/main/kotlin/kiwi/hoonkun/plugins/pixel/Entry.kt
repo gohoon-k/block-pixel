@@ -53,6 +53,9 @@ class Entry: JavaPlugin() {
         super.onEnable()
 
         val dataFolderPath = dataFolder.absolutePath
+        val dataFolderFile = File(dataFolderPath)
+
+        if (!dataFolderFile.exists()) dataFolderFile.mkdirs()
 
         Entry.dataFolder = dataFolder
         logFolder = File("$dataFolderPath/logs")
@@ -86,6 +89,7 @@ class Entry: JavaPlugin() {
 
         val overworldFolder = File("${clientFolder.absolutePath}/${levelName}_overworld")
         if (!overworldFolder.exists()) {
+            overworldFolder.mkdirs()
             val dummyFiles = File("${clientFolder.absolutePath}/$levelName").listFiles()?.toMutableList() ?: throw Exception("main world not exists")
             val excludedFolders = arrayOf("advancements", "datapacks", "playerdata", "stats", "session.lock", "uid.dat")
             dummyFiles.removeIf { excludedFolders.contains(it.name) }
