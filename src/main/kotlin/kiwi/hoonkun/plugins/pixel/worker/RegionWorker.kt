@@ -26,6 +26,10 @@ class RegionWorker {
         private const val HEADER_LENGTH = 8192
         private const val SECTOR_UNIT = 4096
 
+        private val dg = ChatColor.DARK_GRAY
+        private val g = ChatColor.GRAY
+        private val w = ChatColor.WHITE
+
         fun ClientRegionFiles.readClientRegions(): ClientRegions {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
@@ -38,7 +42,7 @@ class RegionWorker {
 
                 result[RegionLocation(regionX, regionZ)] = it.readBytes()
 
-                Executor.sendTitle("reading client region ${it.name} finished in ${System.currentTimeMillis() - start}ms")
+                Executor.sendTitle("${g}reading client region $w${it.name}$g finished$dg in ${System.currentTimeMillis() - start}ms")
             }
 
             return ClientRegions(result)
@@ -86,7 +90,7 @@ class RegionWorker {
 
                 result[regionLocation] = regionStream.toByteArray()
 
-                Executor.sendTitle("generating client region [${regionLocation.x}][${regionLocation.z}] finished in ${System.currentTimeMillis() - regionStart}")
+                Executor.sendTitle("generating client region $g[$w${regionLocation.x}$g][$w${regionLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - regionStart}")
             }
 
             return ClientRegions(result)
@@ -110,7 +114,7 @@ class RegionWorker {
 
                 result[regionLocation] = chunks
 
-                Executor.sendTitle("generating region [${regionLocation.x}][${regionLocation.z}] finished in ${System.currentTimeMillis() - start}")
+                Executor.sendTitle("generating region $g[$w${regionLocation.x}$g][$w${regionLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - start}")
             }
 
             return Regions(result)
