@@ -84,7 +84,7 @@ class RegionWorker {
 
                 result[regionLocation] = regionStream.toByteArray()
 
-                Executor.sendTitle("generating client region [${regionLocation.x}, ${regionLocation.z}] finished in ${System.currentTimeMillis() - regionStart}")
+                Executor.sendTitle("generating client region [${regionLocation.x}][${regionLocation.z}] finished in ${System.currentTimeMillis() - regionStart}")
             }
 
             return ClientRegions(result)
@@ -108,7 +108,7 @@ class RegionWorker {
 
                 result[regionLocation] = chunks
 
-                Executor.sendTitle("generating region [${regionLocation.x}, ${regionLocation.z}] finished in ${System.currentTimeMillis() - start}")
+                Executor.sendTitle("generating region [${regionLocation.x}][${regionLocation.z}] finished in ${System.currentTimeMillis() - start}")
             }
 
             return Regions(result)
@@ -160,7 +160,7 @@ class RegionWorker {
             ancestorChunk: Chunk,
             mode: MergeMode
         ): Chunk {
-            val resultC = Chunk(intoChunk.timestamp, intoChunk.nbt.clone(intoChunk.nbt.name))
+            val resultChunk = Chunk(intoChunk.timestamp, intoChunk.nbt.clone(intoChunk.nbt.name))
 
             val resultE = mutableListOf<BlockEntity>()
             val intoE = intoChunk.blockEntities
@@ -235,13 +235,13 @@ class RegionWorker {
                     if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
                     else LongArray(0)
 
-                resultC.sections[sectionIndex].blockStates.data = resultD
-                resultC.sections[sectionIndex].blockStates.palette = resultPS
+                resultChunk.sections[sectionIndex].blockStates.data = resultD
+                resultChunk.sections[sectionIndex].blockStates.palette = resultPS
             }
 
-            resultC.blockEntities = resultE
+            resultChunk.blockEntities = resultE
 
-            return resultC
+            return resultChunk
         }
 
         private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
