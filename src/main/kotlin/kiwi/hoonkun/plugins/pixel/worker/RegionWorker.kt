@@ -118,123 +118,130 @@ class RegionWorker {
             val merged = mutableMapOf<RegionLocation, List<Chunk>>()
 
             val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
+
             new.forEach { merged[it.key] = it.value }
+            already.map { it.key }.forEach { location ->
+                Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
-            already.map { it.key }
-                .forEach { location ->
-                    Executor.sendTitle("merging region[${location.x}][${location.z}]")
-
-                    val mergedChunks = mutableListOf<Chunk>()
-                    associateChunk(
-                        from.get[location],
-                        into.get[location],
-                        ancestor.get[location]
-                    ).forEach { associatedMap ->
-                        val associated = associatedMap.value
+                val mergedChunks = mutableListOf<Chunk>()
+                associateChunk(from.get[location], into.get[location], ancestor.get[location])
+                    .forEach { associatedMap ->
                         Executor.sendTitle("merging region[${location.x}][${location.z}].chunk[${associatedMap.key.x}][${associatedMap.key.z}]")
-                        val fromC = associated.from
-                        val intoC = associated.into
+
+                        val associatedChunks = associatedMap.value
+                        val fromC = associatedChunks.from
+                        val intoC = associatedChunks.into
 
                         if (fromC != null && intoC == null) {
                             mergedChunks.add(fromC)
                         } else if (fromC == null && intoC != null) {
                             mergedChunks.add(intoC)
                         } else if (fromC != null && intoC != null) {
-                            val anceC = associated.ancestor ?: when (mode) {
+                            val anceC = associatedChunks.ancestor ?: when (mode) {
                                 MergeMode.KEEP -> fromC
                                 MergeMode.REPLACE -> intoC
                             }
 
-                            val resultC = Chunk(intoC.timestamp, intoC.nbt.clone(intoC.nbt.name))
-
-                            val resultE = mutableListOf<BlockEntity>()
-                            val intoE = intoC.blockEntities
-                            val fromE = fromC.blockEntities
-                            val anceE = anceC.blockEntities
-
-                            (0 until intoC.sections.size).forEach { sectionIndex ->
-                                val fromS = fromC.sections[sectionIndex]
-                                val intoS = intoC.sections[sectionIndex]
-                                val anceS = anceC.sections[sectionIndex]
-
-                                val fromP = fromS.blockStates.palette
-                                val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
-
-                                val intoP = intoS.blockStates.palette
-                                val intoM = intoS.blockStates.data.unpack(intoP.size).map { intoP[it] }
-
-                                val anceP = anceS.blockStates.palette
-                                val anceM = anceS.blockStates.data.unpack(anceP.size).map { anceP[it] }
-
-                                val resultP = mutableListOf<Palette>()
-
-                                (0 until 4096).forEach { block ->
-                                    val (x, y, z) = coordinate(intoC.location, intoS.y, block)
-
-                                    val applyIt: (Palette, List<BlockEntity>) -> Unit = { applyB, applyE ->
-                                        resultP.add(applyB)
-                                        applyE.find { it.x == x && it.z == z && it.y == y }
-                                            ?.also { resultE.add(it) }
-                                    }
-
-                                    val blockEquals: (Palette, BlockEntity?, Palette, BlockEntity?) -> Boolean = e@ { p1, be1, p2, be2 ->
-                                        if (p1 != p2) return@e false
-                                        if (be1 != null || be2 != null) return@e false
-
-                                        return@e true
-                                    }
-
-                                    val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
-                                    val fromBE = fromE.find { it.x == x && it.z == z && it.y == y }
-                                    val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
-                                    val intoBE = intoE.find { it.x == x && it.z == z && it.y == y }
-
-                                    val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
-                                    val anceBE = anceE.find { it.x == x && it.z == z && it.y == y }
-
-                                    if (
-                                        !blockEquals(fromB, fromBE, intoB, intoBE) &&
-                                        !blockEquals(fromB, fromBE, anceB, anceBE) &&
-                                        !blockEquals(anceB, anceBE, intoB, intoBE)
-                                    ) {
-                                        if (mode == MergeMode.KEEP) {
-                                            applyIt(intoB, intoE)
-                                        } else if (mode == MergeMode.REPLACE) {
-                                            applyIt(fromB, fromE)
-                                        }
-                                    } else if (
-                                        blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
-                                        blockEquals(anceB, anceBE, intoB, intoBE) && !blockEquals(fromB, fromBE, intoB, intoBE)
-                                    ) {
-                                        if (fromB == anceB) {
-                                            applyIt(intoB, intoE)
-                                        } else if (intoB == anceB) {
-                                            applyIt(fromB, fromE)
-                                        }
-                                    } else {
-                                        applyIt(intoB, intoE)
-                                    }
-                                }
-                                val resultPS = resultP.toSet().toList()
-                                val resultD =
-                                    if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
-                                    else LongArray(0)
-
-                                resultC.sections[sectionIndex].blockStates.data = resultD
-                                resultC.sections[sectionIndex].blockStates.palette = resultPS
-                            }
-
-                            resultC.blockEntities = resultE
-
-                            mergedChunks.add(resultC)
+                            mergedChunks.add(mergeChunk(fromC, intoC, anceC, mode))
                         }
                     }
-                    merged[location] = mergedChunks
-                }
+
+                merged[location] = mergedChunks
+            }
 
             Executor.sendTitle("all regions merged")
 
             return Regions(merged)
+        }
+
+        private fun mergeChunk(
+            fromChunk: Chunk,
+            intoChunk: Chunk,
+            ancestorChunk: Chunk,
+            mode: MergeMode
+        ): Chunk {
+            val resultC = Chunk(intoChunk.timestamp, intoChunk.nbt.clone(intoChunk.nbt.name))
+
+            val resultE = mutableListOf<BlockEntity>()
+            val intoE = intoChunk.blockEntities
+            val fromE = fromChunk.blockEntities
+            val anceE = ancestorChunk.blockEntities
+
+            (0 until intoChunk.sections.size).forEach { sectionIndex ->
+                val fromS = fromChunk.sections[sectionIndex]
+                val intoS = intoChunk.sections[sectionIndex]
+                val anceS = ancestorChunk.sections[sectionIndex]
+
+                val fromP = fromS.blockStates.palette
+                val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
+
+                val intoP = intoS.blockStates.palette
+                val intoM = intoS.blockStates.data.unpack(intoP.size).map { intoP[it] }
+
+                val anceP = anceS.blockStates.palette
+                val anceM = anceS.blockStates.data.unpack(anceP.size).map { anceP[it] }
+
+                val resultP = mutableListOf<Palette>()
+
+                (0 until 4096).forEach { block ->
+                    val (x, y, z) = coordinate(intoChunk.location, intoS.y, block)
+
+                    val applyIt: (Palette, List<BlockEntity>) -> Unit = { applyB, applyE ->
+                        resultP.add(applyB)
+                        applyE.find { it.x == x && it.z == z && it.y == y }
+                            ?.also { resultE.add(it) }
+                    }
+
+                    val blockEquals: (Palette, BlockEntity?, Palette, BlockEntity?) -> Boolean = e@ { p1, be1, p2, be2 ->
+                        if (p1 != p2) return@e false
+                        if (be1 != null || be2 != null) return@e false
+
+                        return@e true
+                    }
+
+                    val fromB = if (fromM.isEmpty()) fromP[0] else fromM[block]
+                    val fromBE = fromE.find { it.x == x && it.z == z && it.y == y }
+                    val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
+                    val intoBE = intoE.find { it.x == x && it.z == z && it.y == y }
+
+                    val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
+                    val anceBE = anceE.find { it.x == x && it.z == z && it.y == y }
+
+                    if (
+                        !blockEquals(fromB, fromBE, intoB, intoBE) &&
+                        !blockEquals(fromB, fromBE, anceB, anceBE) &&
+                        !blockEquals(anceB, anceBE, intoB, intoBE)
+                    ) {
+                        if (mode == MergeMode.KEEP) {
+                            applyIt(intoB, intoE)
+                        } else if (mode == MergeMode.REPLACE) {
+                            applyIt(fromB, fromE)
+                        }
+                    } else if (
+                        blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
+                        blockEquals(anceB, anceBE, intoB, intoBE) && !blockEquals(fromB, fromBE, intoB, intoBE)
+                    ) {
+                        if (fromB == anceB) {
+                            applyIt(intoB, intoE)
+                        } else if (intoB == anceB) {
+                            applyIt(fromB, fromE)
+                        }
+                    } else {
+                        applyIt(intoB, intoE)
+                    }
+                }
+                val resultPS = resultP.toSet().toList()
+                val resultD =
+                    if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
+                    else LongArray(0)
+
+                resultC.sections[sectionIndex].blockStates.data = resultD
+                resultC.sections[sectionIndex].blockStates.palette = resultPS
+            }
+
+            resultC.blockEntities = resultE
+
+            return resultC
         }
 
         private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
