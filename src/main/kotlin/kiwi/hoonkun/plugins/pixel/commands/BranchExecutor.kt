@@ -9,7 +9,8 @@ class BranchExecutor: Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<branch_name>")
+        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "<-d(to delete branch)>")
+        val COMPLETE_LIST_1 = mutableListOf("<branch_name>")
 
     }
 
@@ -18,6 +19,23 @@ class BranchExecutor: Executor() {
 
         if (args.isEmpty()) {
             return CommandExecuteResult(true, "${g}you are currently in '$w${repo.branch}$g' branch", false)
+        }
+
+        if (args[0] == "-d") {
+            if (args.size == 1) return CommandExecuteResult(false, "missing arguments. delete target branch must be specified.")
+
+            val target = args[1]
+
+            try {
+                Git(repo).branchDelete()
+                    .setBranchNames(target)
+                    .setForce(true)
+                    .call()
+            } catch (e: GitAPIException) {
+                return createGitApiFailedResult("delete branch", e)
+            }
+
+            return CommandExecuteResult(true, "${g}successfully deleted branch '$w${target}$g'", false)
         }
 
         try {
@@ -35,6 +53,7 @@ class BranchExecutor: Executor() {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> COMPLETE_LIST_0
+            2 -> if (args[0] == "-d") COMPLETE_LIST_1 else COMPLETE_LIST_EMPTY
             else -> COMPLETE_LIST_EMPTY
         }
     }
