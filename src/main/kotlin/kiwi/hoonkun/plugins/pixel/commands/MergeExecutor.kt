@@ -18,10 +18,14 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
+        val COMPLETE_LIST_WHEN_MERGING = mutableListOf("abort")
+
         val COMPLETE_LIST_1 = mutableListOf("<branch>", "<commit_hash>")
         val COMPLETE_LIST_3 = mutableListOf("keep", "replace")
 
     }
+
+    var canBeAborted = false
 
     private var initialBranch: String? = null
 
@@ -75,6 +79,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
+        if (canBeAborted && args.size == 1) {
+            return COMPLETE_LIST_WHEN_MERGING
+        }
         return when (args.size) {
             1 -> COMPLETE_LIST_DIMENSIONS
             2 -> COMPLETE_LIST_1
@@ -135,12 +142,16 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         initialBranch = null
 
+        canBeAborted = true
+
         dimensions.forEachIndexed { index, dimension ->
             sendTitle("start merging '$dimension'...")
             delay(1000)
             RegionWorker.merge(from[index], into[index], ancestor[index], mode).toClientRegions().write(dimension)
             sendTitle("merging '$dimension' finished.")
         }
+
+        canBeAborted = false
 
         val actualSource =
             if (fromC.name.startsWith(source)) source

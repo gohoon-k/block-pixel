@@ -138,6 +138,18 @@ class Entry: JavaPlugin() {
             return true
         }
 
+        if (args.joinToString(" ") == "merge abort" && (executors["merge"] as MergeExecutor).canBeAborted) {
+            try {
+                job.cancel()
+            } catch (e: CancellationException) {
+                sender.sendMessage(ChatColor.GRAY + "merge operation was canceled by operator.")
+            } catch (e: Exception) {
+                sender.sendMessage(ChatColor.RED + "error while canceling merge operation.")
+            }
+            Executor.sendTitle(" ")
+            return true
+        }
+
         if (scopeRunning) {
             sender.sendMessage(ChatColor.YELLOW + "other command is running. please wait until previous command finishes...")
             return true

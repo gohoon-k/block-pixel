@@ -9,6 +9,8 @@ import kiwi.hoonkun.plugins.pixel.nbt.extensions.byte
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
+import kotlinx.coroutines.delay
+import org.bukkit.ChatColor
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -114,7 +116,7 @@ class RegionWorker {
             return Regions(result)
         }
 
-        fun merge(from: Regions, into: Regions, ancestor: Regions, mode: MergeMode): Regions {
+        suspend fun merge(from: Regions, into: Regions, ancestor: Regions, mode: MergeMode): Regions {
             val merged = mutableMapOf<RegionLocation, List<Chunk>>()
 
             val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
@@ -126,7 +128,9 @@ class RegionWorker {
                 val mergedChunks = mutableListOf<Chunk>()
                 associateChunk(from.get[location], into.get[location], ancestor.get[location])
                     .forEach { associatedMap ->
-                        Executor.sendTitle("merging region[${location.x}][${location.z}].chunk[${associatedMap.key.x}][${associatedMap.key.z}]")
+                        delay(1)
+
+                        Executor.sendTitle("merging region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${associatedMap.key.x}$g][$w${associatedMap.key.z}$g]")
 
                         val associatedChunks = associatedMap.value
                         val fromC = associatedChunks.from
