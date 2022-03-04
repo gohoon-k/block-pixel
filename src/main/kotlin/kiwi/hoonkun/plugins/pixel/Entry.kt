@@ -188,9 +188,28 @@ class Entry: JavaPlugin() {
     ): MutableList<String>? {
         if (command.name != "pixel") return super.onTabComplete(sender, command, alias, args)
 
-        if (args.size == 1) return executors.keys.toMutableList()
+        val merger = (executors["merge"] as MergeExecutor)
 
-        return executors[args[0]]?.autoComplete(args.slice(1 until args.size))
+        if (args.size == 1) {
+            return if (repository != null && !scopeRunning) {
+                executors.keys.toMutableList()
+            } else if (repository != null) {
+                if (merger.canBeAborted) mutableListOf("merge")
+                else mutableListOf()
+            } else {
+                mutableListOf("init")
+            }
+        }
+
+        val remainingArgs = args.slice(1 until args.size)
+
+        return if (scopeRunning && merger.canBeAborted) {
+            merger.autoComplete(remainingArgs)
+        } else if (scopeRunning) {
+            mutableListOf()
+        } else {
+            executors[args[0]]?.autoComplete(remainingArgs)
+        }
     }
 
     operator fun ChatColor.plus(other: String): String = "" + this + other
