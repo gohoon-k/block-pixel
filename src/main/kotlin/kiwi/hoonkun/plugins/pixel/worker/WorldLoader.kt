@@ -92,38 +92,44 @@ class WorldLoader {
         }
 
         suspend fun load(plugin: Entry, world: World) {
-            var loaded = false
+            var worldLoaded = false
+            var lightUpdated = false
             var waitTime = 0L
 
             Executor.sendTitle("reloading world, this may take some time.")
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
+                    worldLoaded = true
+
                     created.isAutoSave = true
                     created.loadedChunks.forEach { chunk ->
                         chunk.unload()
                         chunk.load()
                     }
-                    lightSources.forEach { (x, y, z) ->
+                    lightSources.forEachIndexed { index, (x, y, z) ->
+                        Executor.sendTitle("updating light sources [$index/${lightSources.size}]")
                         val block = created.getBlockAt(x, y, z)
                         val blockData = block.blockData
                         val blockState = block.state
                         created.setBlockData(x, y, z, Material.AIR.createBlockData())
                         created.setBlockData(x, y, z, blockData)
-                        blockState.update(true)
+                        blockState.update(true, true)
                     }
                     lightSources.clear()
                     plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
                         it.teleport(Location(created, it.location.x, it.location.y, it.location.z))
                         it.setGravity(true)
                     }
-                    loaded = true
+                    lightUpdated = true
                 }
             })
 
             val message = loadingMessages.shuffled()
-            while (!loaded) {
+            while (!worldLoaded || !lightUpdated) {
                 delay(100)
+                if (worldLoaded) continue
+
                 waitTime += 100
                 if (waitTime % 5000L == 0L && (waitTime / 5000).toInt() - 1 < message.size) {
                     Executor.sendTitle(message[(waitTime / 5000).toInt() - 1])
