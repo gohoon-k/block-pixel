@@ -118,8 +118,7 @@ class RegionWorker {
             val merged = mutableMapOf<RegionLocation, List<Chunk>>()
 
             val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
-            if (mode == MergeMode.REPLACE)
-                new.forEach { merged[it.key] = it.value }
+            new.forEach { merged[it.key] = it.value }
 
             already.map { it.key }
                 .forEach { location ->
@@ -135,21 +134,28 @@ class RegionWorker {
                         Executor.sendTitle("merging region[${location.x}, ${location.z}].chunk[${associatedMap.key.x}, ${associatedMap.key.z}]")
                         val fromC = associated.from
                         val intoC = associated.into
-                        val anceC = associated.ancestor
-                        if (fromC == null && intoC != null) {
+
+                        if (fromC != null && intoC == null) {
+                            mergedChunks.add(fromC)
+                        } else if (fromC == null && intoC != null) {
                             mergedChunks.add(intoC)
                         } else if (fromC != null && intoC != null) {
+                            val anceC = associated.ancestor ?: when (mode) {
+                                MergeMode.KEEP -> fromC
+                                MergeMode.REPLACE -> intoC
+                            }
+
                             val resultC = Chunk(intoC.timestamp, intoC.nbt.clone(intoC.nbt.name))
 
                             val resultE = mutableListOf<BlockEntity>()
                             val intoE = intoC.blockEntities
                             val fromE = fromC.blockEntities
-                            val anceE = anceC?.blockEntities
+                            val anceE = anceC.blockEntities
 
                             (0 until intoC.sections.size).forEach { sectionIndex ->
                                 val fromS = fromC.sections[sectionIndex]
                                 val intoS = intoC.sections[sectionIndex]
-                                val anceS = anceC?.sections?.get(sectionIndex)
+                                val anceS = anceC.sections[sectionIndex]
 
                                 val fromP = fromS.blockStates.palette
                                 val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
@@ -157,8 +163,8 @@ class RegionWorker {
                                 val intoP = intoS.blockStates.palette
                                 val intoM = intoS.blockStates.data.unpack(intoP.size).map { intoP[it] }
 
-                                val anceP = anceS?.blockStates?.palette
-                                val anceM = if (anceP != null) anceS.blockStates.data.unpack(anceP.size).map { anceP[it] } else null
+                                val anceP = anceS.blockStates.palette
+                                val anceM = anceS.blockStates.data.unpack(anceP.size).map { anceP[it] }
 
                                 val resultP = mutableListOf<Palette>()
 
@@ -183,42 +189,30 @@ class RegionWorker {
                                     val intoB = if (intoM.isEmpty()) intoP[0] else intoM[block]
                                     val intoBE = intoE.find { it.x == x && it.z == z && it.y == y }
 
-                                    if (anceS != null && anceP != null && anceM != null) {
-                                        val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
-                                        val anceBE = anceE?.find { it.x == x && it.z == z && it.y == y }
+                                    val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
+                                    val anceBE = anceE.find { it.x == x && it.z == z && it.y == y }
 
-                                        if (
-                                            !blockEquals(fromB, fromBE, intoB, intoBE) &&
-                                            !blockEquals(fromB, fromBE, anceB, anceBE) &&
-                                            !blockEquals(anceB, anceBE, intoB, intoBE)
-                                        ) {
-                                            if (mode == MergeMode.KEEP) {
-                                                applyIt(intoB, intoE)
-                                            } else if (mode == MergeMode.REPLACE) {
-                                                applyIt(fromB, fromE)
-                                            }
-                                        } else if (
-                                            blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
-                                            blockEquals(anceB, anceBE, intoB, intoBE) && !blockEquals(fromB, fromBE, intoB, intoBE)
-                                        ) {
-                                            if (fromB == anceB) {
-                                                applyIt(intoB, intoE)
-                                            } else if (intoB == anceB) {
-                                                applyIt(fromB, fromE)
-                                            }
-                                        } else {
+                                    if (
+                                        !blockEquals(fromB, fromBE, intoB, intoBE) &&
+                                        !blockEquals(fromB, fromBE, anceB, anceBE) &&
+                                        !blockEquals(anceB, anceBE, intoB, intoBE)
+                                    ) {
+                                        if (mode == MergeMode.KEEP) {
                                             applyIt(intoB, intoE)
+                                        } else if (mode == MergeMode.REPLACE) {
+                                            applyIt(fromB, fromE)
+                                        }
+                                    } else if (
+                                        blockEquals(fromB, fromBE, anceB, anceBE) && !blockEquals(fromB, fromBE, intoB, intoBE) ||
+                                        blockEquals(anceB, anceBE, intoB, intoBE) && !blockEquals(fromB, fromBE, intoB, intoBE)
+                                    ) {
+                                        if (fromB == anceB) {
+                                            applyIt(intoB, intoE)
+                                        } else if (intoB == anceB) {
+                                            applyIt(fromB, fromE)
                                         }
                                     } else {
-                                        if (!blockEquals(fromB, fromBE, intoB, intoBE)) {
-                                            if (mode == MergeMode.KEEP) {
-                                                applyIt(intoB, intoE)
-                                            } else if (mode == MergeMode.REPLACE) {
-                                                applyIt(fromB, fromE)
-                                            }
-                                        } else {
-                                            applyIt(intoB, intoE)
-                                        }
+                                        applyIt(intoB, intoE)
                                     }
                                 }
                                 val resultPS = resultP.toSet().toList()
