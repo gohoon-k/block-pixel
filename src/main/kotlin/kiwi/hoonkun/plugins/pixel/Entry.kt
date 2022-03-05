@@ -206,7 +206,7 @@ class Entry: JavaPlugin() {
                 if (merger.state > 0) mutableListOf("merge")
                 else mutableListOf()
             } else {
-                mutableListOf("init")
+                mutableListOf("init", "whereis", "tp")
             }
         }
 
