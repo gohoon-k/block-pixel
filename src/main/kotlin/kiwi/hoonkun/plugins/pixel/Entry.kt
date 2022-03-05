@@ -36,7 +36,6 @@ class Entry: JavaPlugin() {
         "checkout" to CheckoutExecutor(this),
         "merge" to MergeExecutor(this),
         "list" to ListExecutor(),
-        "undo" to UndoExecutor(),
         "tp" to TeleportExecutor(this),
         "whereis" to WhereIsExecutor(this)
     )
