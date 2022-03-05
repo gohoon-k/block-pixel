@@ -34,30 +34,53 @@ class PixelWorker {
             return result
         }
 
-        fun ClientRegions.write(dimension: String) {
-            val path = versionedDimension[dimension] ?: throw Exception("invalid dimension")
+        suspend fun ClientRegions.writeToClient(plugin: Entry, dimension: String) {
+            val path = clientDimensions[dimension] ?: throw Exception("invalid dimension")
+            WorldLoader.unload(plugin, dimension)
             get.entries.forEach { (location, bytes) ->
                 val file = File("$path/r.${location.x}.${location.z}.mca")
                 file.writeBytes(bytes)
             }
+            WorldLoader.load(plugin, dimension)
         }
 
-        suspend fun addToVersionControl(plugin: Entry, dimensions: List<String>) {
+        suspend fun addToVersionControl(
+            plugin: Entry,
+            dimensions: List<String>,
+            unload: Boolean = true,
+            movePlayer: Boolean = true,
+            reload: Boolean = true,
+            returnPlayer: Boolean = true
+        ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, false)
+                copyRegions(plugin, dimension, false, unload, movePlayer, reload, returnPlayer)
             }
         }
 
-        suspend fun replaceFromVersionControl(plugin: Entry, dimensions: List<String>) {
+        suspend fun replaceFromVersionControl(
+            plugin: Entry,
+            dimensions: List<String>,
+            unload: Boolean = true,
+            movePlayer: Boolean = true,
+            reload: Boolean = true,
+            returnPlayer: Boolean = true
+        ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, true)
+                copyRegions(plugin, dimension, true, unload, movePlayer, reload, returnPlayer)
             }
         }
 
-        private suspend fun copyRegions(plugin: Entry, dimension: String, replace: Boolean) {
-            val worldName = "${Entry.levelName}_$dimension"
-            val world = plugin.server.getWorld(worldName) ?: return
-            WorldLoader.unload(plugin, world)
+        private suspend fun copyRegions(
+            plugin: Entry,
+            dimension: String,
+            replace: Boolean,
+            unload: Boolean = true,
+            movePlayer: Boolean = true,
+            reload: Boolean = true,
+            returnPlayer: Boolean = true
+        ) {
+            if (movePlayer) WorldLoader.movePlayersTo(plugin, dimension)
+            if (unload) WorldLoader.unload(plugin, dimension)
 
             val fromPath = (if (!replace) clientDimensions else versionedDimension)[dimension]
                 ?: throw Exception("invalid dimension '$dimension'")
@@ -72,7 +95,8 @@ class PixelWorker {
             if (!toDirectory.exists()) toDirectory.mkdirs()
             fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
 
-            WorldLoader.load(plugin, world)
+            if (reload) WorldLoader.load(plugin, dimension)
+            if (returnPlayer) WorldLoader.returnPlayersTo(plugin, dimension)
         }
 
     }

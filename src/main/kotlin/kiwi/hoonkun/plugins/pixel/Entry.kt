@@ -44,8 +44,7 @@ class Entry: JavaPlugin() {
     lateinit var void: World
     lateinit var overworld: World
 
-    private lateinit var scope: CoroutineScope
-    private val job = Job()
+    private lateinit var job: CompletableJob
 
     private var scopeRunning = false
 
@@ -106,8 +105,6 @@ class Entry: JavaPlugin() {
             it.teleport(Location(server.getWorld(levelName)!!, it.location.x, it.location.y, it.location.z))
         }
 
-        scope = CoroutineScope(job + Dispatchers.IO)
-
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
 
@@ -138,15 +135,20 @@ class Entry: JavaPlugin() {
             return true
         }
 
-        if (args.joinToString(" ") == "merge abort" && (executors["merge"] as MergeExecutor).canBeAborted) {
-            try {
-                job.cancel()
-            } catch (e: CancellationException) {
-                sender.sendMessage(ChatColor.GRAY + "merge operation was canceled by operator.")
-            } catch (e: Exception) {
-                sender.sendMessage(ChatColor.RED + "error while canceling merge operation.")
-            }
+        val merger = (executors["merge"] as MergeExecutor)
+        val joinedArgs = args.joinToString(" ")
+
+        if (joinedArgs == "merge abort" && merger.state > 0) {
+            job.cancel()
             Executor.sendTitle(" ")
+            return true
+        } else if (joinedArgs == "merge abort" && merger.state < 0) {
+            when (merger.state) {
+                MergeExecutor.IDLE -> sender.sendMessage(ChatColor.RED + "merger is not merging any commits")
+                MergeExecutor.APPLYING_LIGHTS -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while updating lights of world")
+                MergeExecutor.RELOADING_WORLDS -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while world is loading")
+                MergeExecutor.COMMITTING -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while committing merged data into local repository")
+            }
             return true
         }
 
@@ -155,6 +157,8 @@ class Entry: JavaPlugin() {
             return true
         }
 
+        job = Job()
+        val scope = CoroutineScope(job + Dispatchers.IO)
         scope.launch {
             scopeRunning = true
 
@@ -170,11 +174,11 @@ class Entry: JavaPlugin() {
 
                 Executor.sendTitle(" ")
             } catch (e: Exception) {
-                scopeRunning = false
                 e.printStackTrace()
+            } finally {
+                if (job.isCancelled) job.complete()
+                scopeRunning = false
             }
-
-            scopeRunning = false
         }
 
         return true
@@ -194,7 +198,7 @@ class Entry: JavaPlugin() {
             return if (repository != null && !scopeRunning) {
                 executors.keys.toMutableList()
             } else if (repository != null) {
-                if (merger.canBeAborted) mutableListOf("merge")
+                if (merger.state > 0) mutableListOf("merge")
                 else mutableListOf()
             } else {
                 mutableListOf("init")
@@ -203,7 +207,7 @@ class Entry: JavaPlugin() {
 
         val remainingArgs = args.slice(1 until args.size)
 
-        return if (scopeRunning && merger.canBeAborted) {
+        return if (scopeRunning && merger.state > 0) {
             merger.autoComplete(remainingArgs)
         } else if (scopeRunning) {
             mutableListOf()

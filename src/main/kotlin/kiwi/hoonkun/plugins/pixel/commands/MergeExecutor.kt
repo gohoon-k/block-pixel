@@ -2,9 +2,10 @@ package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker.Companion.write
+import kiwi.hoonkun.plugins.pixel.worker.PixelWorker.Companion.writeToClient
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
+import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
@@ -13,6 +14,7 @@ import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
+import kotlin.coroutines.cancellation.CancellationException
 
 
 class MergeExecutor(private val plugin: Entry): Executor() {
@@ -24,9 +26,16 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val COMPLETE_LIST_1 = mutableListOf("<branch>", "<commit_hash>")
         val COMPLETE_LIST_3 = mutableListOf("keep", "replace")
 
+        const val IDLE = -1
+
+        const val MERGING = 1
+        const val RELOADING_WORLDS = -2
+        const val APPLYING_LIGHTS = -3
+        const val COMMITTING = -4
+
     }
 
-    var canBeAborted = false
+    var state = IDLE
 
     private var initialBranch: String? = null
 
@@ -58,10 +67,23 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
 
             val message = merge(repo, from, dimensions, mode)
-            sendTitle("finished merging, reloading world...")
-            PixelWorker.replaceFromVersionControl(plugin, dimensions)
 
-            return CommandExecuteResult(true, message)
+            if (message != null) {
+                sendTitle("finished merging, reloading world...")
+
+                PixelWorker.replaceFromVersionControl(plugin, dimensions, unload = false, movePlayer = false)
+
+                dimensions.forEach {
+                    WorldLoader.returnPlayersTo(plugin, it)
+                }
+            }
+
+            state = IDLE
+
+            return if (message != null)
+                CommandExecuteResult(true, message)
+            else
+                CommandExecuteResult(true, "merge operation was canceled by operator.")
         } catch (exception: UnknownDimensionException) {
             return createDimensionExceptionResult(exception)
         } catch (e: Exception) {
@@ -86,7 +108,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        if (canBeAborted && args.size == 1) {
+        if (state > 0 && args.size == 1) {
             return COMPLETE_LIST_WHEN_MERGING
         }
         return when (args.size) {
@@ -98,7 +120,12 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         }
     }
 
-    private suspend fun merge(repo: Repository, source: String, dimensions: List<String>, mode: RegionWorker.Companion.MergeMode): String {
+    private suspend fun merge(
+        repo: Repository,
+        source: String,
+        dimensions: List<String>,
+        mode: RegionWorker.Companion.MergeMode
+    ): String? {
         val git = Git(repo)
 
         val intoCommits = git.log().setMaxCount(1).call().toList()
@@ -149,16 +176,41 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         initialBranch = null
 
-        canBeAborted = true
+        try {
+            state = MERGING
 
-        dimensions.forEachIndexed { index, dimension ->
-            sendTitle("start merging '$dimension'...")
-            delay(1000)
-            RegionWorker.merge(from[index], into[index], ancestor[index], mode).toClientRegions().write(dimension)
-            sendTitle("merging '$dimension' finished.")
+            val mergedDimensions = dimensions.mapIndexed { index, dimension ->
+                sendTitle("start merging '$dimension'...")
+                delay(1000)
+                val clientRegions = RegionWorker.merge(
+                    from[index],
+                    into[index],
+                    ancestor[index],
+                    mode
+                ).toClientRegions()
+                sendTitle("merging '$dimension' finished.")
+                dimension to clientRegions
+            }.toMap()
+
+            mergedDimensions.forEach { (dimension, regions) ->
+                state = RELOADING_WORLDS
+                WorldLoader.movePlayersTo(plugin, dimension)
+                regions.writeToClient(plugin, dimension)
+                state = APPLYING_LIGHTS
+                WorldLoader.updateLights(plugin, dimension)
+            }
+        } catch(exception: CancellationException) {
+            state = RELOADING_WORLDS
+            sendTitle("aborting merge operation...")
+            return null
         }
 
-        canBeAborted = false
+        state = RELOADING_WORLDS
+
+        sendTitle("light updated finished, reloading world...")
+        PixelWorker.addToVersionControl(plugin, dimensions, reload = false, returnPlayer = false)
+
+        state = COMMITTING
 
         val actualSource =
             if (fromC.name.startsWith(source)) source

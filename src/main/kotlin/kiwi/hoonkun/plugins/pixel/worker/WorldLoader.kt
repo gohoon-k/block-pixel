@@ -3,10 +3,7 @@ package kiwi.hoonkun.plugins.pixel.worker
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.commands.Executor
 import kotlinx.coroutines.delay
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.World
-import org.bukkit.WorldCreator
+import org.bukkit.*
 
 class WorldLoader {
 
@@ -72,14 +69,19 @@ class WorldLoader {
 
         private val lightSources = mutableListOf<Triple<Int, Int, Int>>()
 
-        suspend fun unload(plugin: Entry, world: World) {
+        private val g = ChatColor.GRAY
+        private val w = ChatColor.WHITE
+
+        private fun getWorld(plugin: Entry, dimension: String): World = plugin.server.getWorld("${Entry.levelName}_$dimension")!!
+
+        suspend fun unload(plugin: Entry, dimension: String) {
+            unload(plugin, getWorld(plugin, dimension))
+        }
+
+        private suspend fun unload(plugin: Entry, world: World) {
             var unloaded = false
 
             plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
-                    it.setGravity(false)
-                    it.teleport(Location(plugin.void, it.location.x, it.location.y, it.location.z))
-                }
                 world.isAutoSave = false
                 world.save()
 
@@ -91,7 +93,9 @@ class WorldLoader {
             while (!unloaded) { delay(100) }
         }
 
-        suspend fun load(plugin: Entry, world: World) {
+        suspend fun load(plugin: Entry, dimension: String) {
+            val worldName = "${Entry.levelName}_$dimension"
+
             var worldLoaded = false
             var lightUpdated = false
             var waitTime = 0L
@@ -99,27 +103,13 @@ class WorldLoader {
             Executor.sendTitle("reloading world, this may take some time.")
 
             plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.createWorld(WorldCreator(world.name))!!.also { created ->
+                plugin.server.createWorld(WorldCreator(worldName))!!.also { created ->
                     worldLoaded = true
 
                     created.isAutoSave = true
                     created.loadedChunks.forEach { chunk ->
                         chunk.unload()
                         chunk.load()
-                    }
-                    lightSources.forEachIndexed { index, (x, y, z) ->
-                        Executor.sendTitle("updating light sources [$index/${lightSources.size}]")
-                        val block = created.getBlockAt(x, y, z)
-                        val blockData = block.blockData
-                        val blockState = block.state
-                        created.setBlockData(x, y, z, Material.AIR.createBlockData())
-                        created.setBlockData(x, y, z, blockData)
-                        blockState.update(true, true)
-                    }
-                    lightSources.clear()
-                    plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
-                        it.teleport(Location(created, it.location.x, it.location.y, it.location.z))
-                        it.setGravity(true)
                     }
                     lightUpdated = true
                 }
@@ -136,6 +126,51 @@ class WorldLoader {
                 }
             }
             Executor.sendTitle(" ")
+        }
+
+        fun updateLights(plugin: Entry, dimension: String) {
+            updateLights(plugin, getWorld(plugin, dimension))
+        }
+
+        private fun updateLights(plugin: Entry, world: World) {
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                lightSources.forEachIndexed { index, (x, y, z) ->
+                    Executor.sendTitle("${g}updating light sources [$w$index$g/${lightSources.size}]")
+                    val block = world.getBlockAt(x, y, z)
+                    val blockData = block.blockData
+                    val blockState = block.state
+                    world.setBlockData(x, y, z, Material.AIR.createBlockData())
+                    world.setBlockData(x, y, z, blockData)
+                    blockState.update(true, true)
+                }
+                lightSources.clear()
+            })
+        }
+
+        fun movePlayersTo(plugin: Entry, dimension: String) {
+            movePlayersTo(plugin, getWorld(plugin, dimension))
+        }
+
+        private fun movePlayersTo(plugin: Entry, world: World) {
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
+                    it.setGravity(false)
+                    it.teleport(Location(plugin.void, it.location.x, it.location.y, it.location.z))
+                }
+            })
+        }
+
+        fun returnPlayersTo(plugin: Entry, dimension: String) {
+            returnPlayersTo(plugin, getWorld(plugin, dimension))
+        }
+
+        private fun returnPlayersTo(plugin: Entry, world: World) {
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
+                    it.teleport(Location(world, it.location.x, it.location.y, it.location.z))
+                    it.setGravity(true)
+                }
+            })
         }
 
         fun registerLightSourceLocation(position: Triple<Int, Int, Int>) {
