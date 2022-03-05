@@ -10,7 +10,7 @@ class TextWidthUtils {
             'A' to 4, 'B' to 4, 'C' to 4, 'D' to 4, 'E' to 4, 'F' to 4, 'G' to 4, 'H' to 4, 'I' to 3, 'J' to 4, 'K' to 4, 'L' to 4, 'M' to 5,
             'N' to 5, 'O' to 4, 'P' to 4, 'Q' to 4, 'R' to 4, 'S' to 4, 'T' to 5, 'U' to 4, 'V' to 5, 'W' to 5, 'X' to 5, 'Y' to 5, 'Z' to 5,
             '1' to 5, '2' to 5, '3' to 5, '4' to 5, '5' to 5, '6' to 5, '7' to 5, '8' to 5, '9' to 5, '0' to 5, '"' to 3, '\'' to 1, '/' to 5, '\\' to 5,
-            '-' to 4, '_' to 4, ' ' to 2
+            '-' to 4, '_' to 4, ' ' to 2, '(' to 3, ')' to 3, '[' to 2, ']' to 2, '<' to 4, '>' to 4
         )
 
         private const val letterSpacing = 1
