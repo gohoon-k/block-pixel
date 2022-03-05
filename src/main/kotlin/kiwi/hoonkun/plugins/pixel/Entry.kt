@@ -1,6 +1,8 @@
 package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.commands.*
+import kiwi.hoonkun.plugins.pixel.listener.PlayerPortalListener
+import kiwi.hoonkun.plugins.pixel.listener.PlayerSpawnListener
 import kotlinx.coroutines.*
 import org.bukkit.*
 import org.bukkit.command.Command
@@ -103,6 +105,9 @@ class Entry: JavaPlugin() {
             it.setGravity(true)
             it.teleport(Location(server.getWorld(levelName)!!, it.location.x, it.location.y, it.location.z))
         }
+
+        server.pluginManager.registerEvents(PlayerPortalListener(this), this)
+        server.pluginManager.registerEvents(PlayerSpawnListener(this), this)
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is enabled.")
     }
