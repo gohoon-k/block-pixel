@@ -11,7 +11,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "<commit_hash>")
+        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "<commit_hash>", "-recover")
 
     }
 
@@ -24,6 +24,14 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
         if (args.size == 1)
             return CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
 
+        val git = Git(repo)
+
+        if (args[0] == "-recover") {
+            git.checkout().setStartPoint("HEAD").setAllPaths(true).call()
+            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+            return CommandExecuteResult(true, "cleaned versioned directory to ${repo.branch}")
+        }
+
         if (args.size == 2)
             return CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before checkout.\nif yes, pass 'true' to last argument.")
 
@@ -31,7 +39,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
             return uncommittedChangesResult
 
         try {
-            val command = Git(repo).checkout().setName(args[1])
+            val command = git.checkout().setName(args[1])
             command.call()
 
             if (command.result.status != CheckoutResult.Status.OK) {
@@ -52,7 +60,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
         return when (args.size) {
             1 -> COMPLETE_LIST_DIMENSIONS
             2 -> COMPLETE_LIST_0
-            3 -> COMPLETE_LIST_COMMITTED
+            3 -> if (args[1] != "-recover") COMPLETE_LIST_COMMITTED else COMPLETE_LIST_EMPTY
             else -> COMPLETE_LIST_EMPTY
         }
     }
