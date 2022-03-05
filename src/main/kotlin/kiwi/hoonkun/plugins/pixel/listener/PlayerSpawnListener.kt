@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import org.bukkit.Location
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerRespawnEvent
 import org.spigotmc.event.player.PlayerSpawnLocationEvent
 
 class PlayerSpawnListener(private val plugin: Entry): Listener {
@@ -12,6 +13,12 @@ class PlayerSpawnListener(private val plugin: Entry): Listener {
     fun onPlayerSpawn(event: PlayerSpawnLocationEvent) {
         val location = event.spawnLocation
         event.spawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
+    }
+
+    @EventHandler
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        val location = event.respawnLocation
+        event.respawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
     }
 
 }
