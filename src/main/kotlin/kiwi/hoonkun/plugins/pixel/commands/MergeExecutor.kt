@@ -227,7 +227,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             .call()
 
         git.commit()
-            .setMessage("merged $message")
+            .setMessage("merged ${message.replace("$w", "").replace("$g", "")}")
             .setCommitter(PersonIdent(git.repository))
             .call()
 

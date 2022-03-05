@@ -69,9 +69,6 @@ class WorldLoader {
 
         private val lightSources = mutableListOf<Triple<Int, Int, Int>>()
 
-        private val g = ChatColor.GRAY
-        private val w = ChatColor.WHITE
-
         private fun getWorld(plugin: Entry, dimension: String): World = plugin.server.getWorld("${Entry.levelName}_$dimension")!!
 
         suspend fun unload(plugin: Entry, dimension: String) {
@@ -135,7 +132,7 @@ class WorldLoader {
         private fun updateLights(plugin: Entry, world: World) {
             plugin.server.scheduler.runTask(plugin, Runnable {
                 lightSources.forEachIndexed { index, (x, y, z) ->
-                    Executor.sendTitle("${g}updating light sources [$w$index$g/${lightSources.size}]")
+                    Executor.sendTitle("updating light sources [$index/${lightSources.size}]")
                     val block = world.getBlockAt(x, y, z)
                     val blockData = block.blockData
                     val blockState = block.state
