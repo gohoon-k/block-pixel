@@ -8,10 +8,26 @@ import java.io.File
 
 class InitializeExecutor: Executor() {
 
+    companion object {
+        val COMPLETE_LIST_1 = mutableListOf("force")
+    }
+
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (!Entry.versionedFolder.exists()) Entry.versionedFolder.mkdirs()
 
-        val repository = FileRepositoryBuilder.create(File("${Entry.versionedFolder.absolutePath}/.git"))
+        val gitDir = File("${Entry.versionedFolder.absolutePath}/.git")
+        if (gitDir.exists() && args.isEmpty()) {
+            return CommandExecuteResult(
+                false,
+                "local repository already exists! if you want to delete and recreate local repository, add 'force' argument."
+            )
+        } else if (gitDir.exists() && args[0] == "force") {
+            gitDir.deleteRecursively()
+        } else if (gitDir.exists()) {
+            return CommandExecuteResult(false, "invalid argument '${args[0]}'")
+        }
+
+        val repository = FileRepositoryBuilder.create(gitDir)
         repository.create()
 
         Entry.repository = repository
@@ -20,7 +36,10 @@ class InitializeExecutor: Executor() {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return mutableListOf()
+        return when(args.size) {
+            1 -> COMPLETE_LIST_1
+            else -> COMPLETE_LIST_EMPTY
+        }
     }
 
 }
