@@ -9,7 +9,7 @@ class BranchExecutor: Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "<-d(to delete branch)>")
+        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "-d")
         val COMPLETE_LIST_1 = mutableListOf("<branch_name>")
 
     }
