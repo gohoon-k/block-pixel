@@ -6,6 +6,7 @@ import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
+import org.eclipse.jgit.api.errors.NoHeadException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -48,10 +49,16 @@ class ListExecutor: Executor() {
     }
 
     private fun printCommits(git: Git, page: Int = 0): String {
-        val commits = git.log().call().toList()
+        val noCommitsMessage = "${g}there are no commits in this repository yet."
+
+        val commits = try {
+            git.log().call().toList()
+        } catch (e: NoHeadException) {
+            return noCommitsMessage
+        }
 
         if (commits.isEmpty()) {
-            return "${g}there are no commits in this repository yet."
+            return noCommitsMessage
         }
 
         val branch = git.repository.branch
