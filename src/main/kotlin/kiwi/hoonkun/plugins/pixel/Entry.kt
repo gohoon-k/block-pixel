@@ -1,5 +1,6 @@
 package kiwi.hoonkun.plugins.pixel
 
+import kiwi.hoonkun.plugins.pixel.chunk.generator.VoidChunkGenerator
 import kiwi.hoonkun.plugins.pixel.commands.*
 import kiwi.hoonkun.plugins.pixel.listener.PlayerPortalListener
 import kiwi.hoonkun.plugins.pixel.listener.PlayerSpawnListener
@@ -81,9 +82,9 @@ class Entry: JavaPlugin() {
         } else {
             logger.log(Level.INFO, "creating new void world")
             WorldCreator("__void__")
+                .generator(VoidChunkGenerator())
+                .environment(World.Environment.NORMAL)
                 .type(WorldType.FLAT)
-                .generateStructures(false)
-                .generatorSettings("""{"structures": {"structures": {}}, "layers": [{"block": "air", "height": 1}], "biome":"plains"}""")
                 .createWorld() ?: throw Exception("cannot create void world")
         }
 
