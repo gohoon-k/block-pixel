@@ -12,12 +12,18 @@ class PlayerSpawnListener(private val plugin: Entry): Listener {
     @EventHandler
     fun onPlayerSpawn(event: PlayerSpawnLocationEvent) {
         val location = event.spawnLocation
+
+        if (location.world?.name != Entry.levelName) return
+
         event.spawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
     }
 
     @EventHandler
     fun onPlayerRespawn(event: PlayerRespawnEvent) {
         val location = event.respawnLocation
+
+        if (location.world?.name != Entry.levelName) return
+
         event.respawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
     }
 
