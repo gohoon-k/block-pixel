@@ -31,8 +31,9 @@ class IOWorker {
             val result = mutableListOf<NBT<T>>()
             dimensions.forEach { dimension ->
                 val dimensionPath = getVersionedPath(anvilType, dimension)
-                val anvilFiles = File(dimensionPath).listFiles() ?: return@forEach
-                result.add(anvilFiles.read().toNBT(generator))
+                val anvilFiles = File(dimensionPath).listFiles()
+                if (anvilFiles == null) result.add(mapOf())
+                else result.add(anvilFiles.read().toNBT(generator))
             }
             return result
         }
