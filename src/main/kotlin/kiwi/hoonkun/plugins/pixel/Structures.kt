@@ -10,7 +10,7 @@ data class AnvilLocation(val x: Int, val z: Int)
 
 typealias AnvilFiles = Array<File>
 typealias Anvils = Map<AnvilLocation, ByteArray>
-typealias NBT<T> = Map<AnvilLocation, List<T>>
+typealias NBT<T/* :NBTData */> = Map<AnvilLocation, List<T>>
 
 typealias PackedBlocks = LongArray
 typealias Blocks = List<Int>
