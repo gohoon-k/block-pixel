@@ -10,7 +10,7 @@ import kotlinx.coroutines.delay
 import org.bukkit.ChatColor
 
 
-class RegionWorker {
+class MergeWorker {
 
     companion object {
 

@@ -8,7 +8,7 @@ import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilF
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
 import java.io.File
 
-class RegionWorkerTest: StringSpec() {
+class MergeWorkerTest: StringSpec() {
 
     init {
 

@@ -4,7 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker.Companion.writeToClient
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker
+import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
@@ -59,9 +59,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             val dimensions = dimensions(args[0])
             val from = args[1]
             val mode = if (args[2] == "keep")
-                RegionWorker.Companion.MergeMode.KEEP
+                MergeWorker.Companion.MergeMode.KEEP
             else if (args[2] == "replace")
-                RegionWorker.Companion.MergeMode.REPLACE
+                MergeWorker.Companion.MergeMode.REPLACE
             else return CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
 
             initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
@@ -124,7 +124,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         repo: Repository,
         source: String,
         dimensions: List<String>,
-        mode: RegionWorker.Companion.MergeMode
+        mode: MergeWorker.Companion.MergeMode
     ): String? {
         val git = Git(repo)
 
@@ -182,7 +182,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             val mergedDimensions = dimensions.mapIndexed { index, dimension ->
                 sendTitle("start merging '$dimension'...")
                 delay(1000)
-                val clientRegions = RegionWorker.merge(
+                val clientRegions = MergeWorker.merge(
                     from[index],
                     into[index],
                     ancestor[index],
