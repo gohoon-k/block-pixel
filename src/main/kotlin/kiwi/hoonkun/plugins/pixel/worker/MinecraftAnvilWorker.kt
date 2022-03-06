@@ -44,7 +44,7 @@ class MinecraftAnvilWorker {
             return result
         }
 
-        inline fun <T: NBTData> Anvils.toNBT(generator: (Int, CompoundTag) -> T): NBT<T> {
+        inline fun <T: NBTData> Anvils.toNBT(generator: (NBTLocation, Int, CompoundTag) -> T): NBT<T> {
             val result = mutableMapOf<AnvilLocation, List<T>>()
 
             entries.forEach { (anvilLocation, bytes) ->
@@ -53,11 +53,13 @@ class MinecraftAnvilWorker {
                 val parts = mutableListOf<T>()
 
                 for (m in 0 until 32 * 32) {
-                    val i = 4 * (((m / 32) and 31) + ((m % 32) and 31) * 32)
+                    val x = m / 32
+                    val z = m % 32
+                    val i = 4 * ((x and 31) + (z and 31) * 32)
 
                     val (timestamp, buffer) = decompress(bytes, i) ?: continue
 
-                    parts.add(generator.invoke(timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
+                    parts.add(generator.invoke(NBTLocation(x, z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
                 }
 
                 result[anvilLocation] = parts
@@ -149,7 +151,7 @@ class MinecraftAnvilWorker {
             return Pair(timestamp, chunkBuffer)
         }
 
-        fun compress(tag: CompoundTag): ByteArray {
+        private fun compress(tag: CompoundTag): ByteArray {
             val buffer = ByteBuffer.allocate(Byte.SIZE_BYTES + Short.SIZE_BYTES + tag.sizeInBytes)
             tag.ensureName(null).getAs<CompoundTag>().writeAsRoot(buffer)
 

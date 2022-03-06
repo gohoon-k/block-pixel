@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.*
+import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
 
@@ -10,36 +11,59 @@ class IOWorker {
 
     companion object {
 
-        private val clientDimensions get() = mapOf(
-            "overworld" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_overworld/region",
-            "nether" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_nether/DIM-1/region",
-            "the_end" to "${Entry.clientFolder.absolutePath}/${Entry.levelName}_the_end/DIM1/region"
+        private val clientDimDir = mapOf(
+            "overworld" to "",
+            "nether" to "/DIM-1",
+            "the_end" to "/DIM1"
         )
 
-        private val versionedDimension get() = mapOf(
-            "overworld" to "${Entry.versionedFolder.absolutePath}/overworld",
-            "nether" to "${Entry.versionedFolder.absolutePath}/nether",
-            "the_end" to "${Entry.versionedFolder.absolutePath}/the_end"
-        )
+        private fun getClientPath(anvilType: AnvilType, dimension: String) =
+            "${Entry.clientFolder.absolutePath}/${Entry.levelName}_${dimension}${clientDimDir[dimension]}/${anvilType.path}"
 
-        fun read(dimensions: List<String>): List<NBT<Chunk>> {
-            val result = mutableListOf<NBT<Chunk>>()
+        private fun getVersionedPath(anvilType: AnvilType, dimension: String) =
+            "${Entry.versionedFolder.absolutePath}/${dimension}/${anvilType.path}"
+
+        private inline fun <T: NBTData> readVersionedAnvils(
+            anvilType: AnvilType,
+            dimensions: List<String>,
+            generator: (NBTLocation, Int, CompoundTag) -> T
+        ): List<NBT<T>> {
+            val result = mutableListOf<NBT<T>>()
             dimensions.forEach { dimension ->
-                val dimensionPath = versionedDimension[dimension] ?: throw Exception("invalid dimension")
+                val dimensionPath = getVersionedPath(anvilType, dimension)
                 val anvilFiles = File(dimensionPath).listFiles() ?: return@forEach
-                result.add(anvilFiles.read().toNBT { timestamp, nbt -> Chunk(timestamp, nbt) })
+                result.add(anvilFiles.read().toNBT(generator))
             }
             return result
         }
 
-        suspend fun Anvils.writeToClient(plugin: Entry, dimension: String) {
-            val path = clientDimensions[dimension] ?: throw Exception("invalid dimension")
-            WorldLoader.unload(plugin, dimension)
-            entries.forEach { (location, bytes) ->
+        fun readVersionedRegionAnvils(dimensions: List<String>): List<NBT<Chunk>> {
+            return readVersionedAnvils(
+                AnvilType.REGION,
+                dimensions
+            ) { _, timestamp, nbt -> Chunk(timestamp, nbt) }
+        }
+
+        fun readVersionedPoiAnvils(dimensions: List<String>): List<NBT<Poi>> {
+            return readVersionedAnvils(
+                AnvilType.POI,
+                dimensions
+            ) { location, timestamp, nbt -> Poi(location, timestamp, nbt) }
+        }
+
+        fun readVersionedEntityAnvils(dimensions: List<String>): List<NBT<Entity>> {
+            return readVersionedAnvils(
+                AnvilType.ENTITY,
+                dimensions
+            ) { _, timestamp, nbt -> Entity(timestamp, nbt) }
+        }
+
+        fun writeRegionAnvilToClient(regionAnvil: Anvils, dimension: String) {
+            val path = getClientPath(AnvilType.REGION, dimension)
+            regionAnvil.entries.forEach { (location, bytes) ->
                 val file = File("$path/r.${location.x}.${location.z}.mca")
                 file.writeBytes(bytes)
             }
-            WorldLoader.load(plugin, dimension)
         }
 
         suspend fun addToVersionControl(
@@ -49,7 +73,7 @@ class IOWorker {
             needsLoad: Boolean = true
         ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, false, needsUnload, needsLoad)
+                copyAnvilFiles(plugin, dimension,false, needsUnload, needsLoad)
             }
         }
 
@@ -60,11 +84,11 @@ class IOWorker {
             needsLoad: Boolean = true
         ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, true, needsUnload, needsLoad)
+                copyAnvilFiles(plugin, dimension, true, needsUnload, needsLoad)
             }
         }
 
-        private suspend fun copyRegions(
+        private suspend fun copyAnvilFiles(
             plugin: Entry,
             dimension: String,
             replace: Boolean,
@@ -76,18 +100,21 @@ class IOWorker {
                 WorldLoader.unload(plugin, dimension)
             }
 
-            val fromPath = (if (!replace) clientDimensions else versionedDimension)[dimension]
-                ?: throw Exception("invalid dimension '$dimension'")
-            val toPath = (if (!replace) versionedDimension else clientDimensions)[dimension]
-                ?: throw Exception("invalid dimension '$dimension'")
+            AnvilType.values().forEach { anvilType ->
 
-            val fromDirectory = File(fromPath)
-            if (!fromDirectory.exists()) fromDirectory.mkdirs()
+                val fromPath = if (!replace) getClientPath(anvilType, dimension) else getVersionedPath(anvilType, dimension)
+                val toPath = if (!replace) getVersionedPath(anvilType, dimension) else getClientPath(anvilType, dimension)
 
-            val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find region files of dimension '$dimension'")
-            val toDirectory = File(toPath)
-            if (!toDirectory.exists()) toDirectory.mkdirs()
-            fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
+                val fromDirectory = File(fromPath)
+                val toDirectory = File(toPath)
+
+                if (!fromDirectory.exists()) fromDirectory.mkdirs()
+                if (!toDirectory.exists()) toDirectory.mkdirs()
+
+                val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find directory of anvils with dimension '$dimension'")
+                fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
+
+            }
 
             if (needsLoad) {
                 WorldLoader.load(plugin, dimension)

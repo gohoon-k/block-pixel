@@ -15,6 +15,10 @@ typealias NBT<T/* :NBTData */> = Map<AnvilLocation, List<T>>
 typealias PackedBlocks = LongArray
 typealias Blocks = List<Int>
 
+enum class AnvilType(val path: String) {
+    REGION("region"), POI("poi"), ENTITY("entity")
+}
+
 abstract class NBTData(val timestamp: Int, val nbt: CompoundTag) {
     abstract val location: NBTLocation
 }
@@ -80,6 +84,19 @@ data class BlockEntity(val nbt: CompoundTag) {
     val y = nbt["y"]!!.getAs<IntTag>().value
     val z = nbt["z"]!!.getAs<IntTag>().value
     val id = nbt["id"]!!.getAs<StringTag>().value
+}
+
+class Poi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+
+}
+
+class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+    private val position = nbt["Position"]!!.getAs<IntArrayTag>().value
+
+    private val xPos = position[0]
+    private val zPos = position[1]
+
+    override val location: NBTLocation = NBTLocation(xPos, zPos)
 }
 
 fun List<Chunk>.findChunk(x: Int, z: Int): Chunk? = find {

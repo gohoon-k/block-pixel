@@ -3,7 +3,6 @@ package kiwi.hoonkun.plugins.pixel.commands
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
-import kiwi.hoonkun.plugins.pixel.worker.IOWorker.Companion.writeToClient
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
@@ -136,7 +135,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
         sendTitle("reading current regions...")
-        val into = IOWorker.read(dimensions)
+        val into = IOWorker.readVersionedRegionAnvils(dimensions)
 
         try {
             git.checkout().setName(source).call()
@@ -150,7 +149,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
-        val from = IOWorker.read(dimensions)
+        val from = IOWorker.readVersionedRegionAnvils(dimensions)
 
         val commitLookup = RevWalk(git.repository)
         val intoC = commitLookup.lookupCommit(intoCommit.id)
@@ -166,7 +165,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         git.checkout().setName(mergeBase.name).call()
 
         sendTitle("reading merge-base regions...")
-        val ancestor = IOWorker.read(dimensions)
+        val ancestor = IOWorker.readVersionedRegionAnvils(dimensions)
 
         val branch = initialBranch
 
@@ -195,7 +194,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             mergedDimensions.forEach { (dimension, regions) ->
                 state = RELOADING_WORLDS
                 WorldLoader.movePlayersTo(plugin, dimension)
-                regions.writeToClient(plugin, dimension)
+                WorldLoader.unload(plugin, dimension)
+                IOWorker.writeRegionAnvilToClient(regions, dimension)
+                WorldLoader.load(plugin, dimension)
                 state = APPLYING_LIGHTS
                 WorldLoader.updateLights(plugin, dimension)
             }
