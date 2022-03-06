@@ -16,7 +16,7 @@ value class RegionsAnvil(val get: Map<RegionLocation, ByteArray>)
 
 @JvmInline
 value class Regions(val get: Map<RegionLocation, List<Chunk>>)
-typealias BlocksRaw = LongArray
+typealias PackedBlocks = LongArray
 typealias Blocks = List<Int>
 
 data class Chunk(val timestamp: Int, val nbt: CompoundTag) {

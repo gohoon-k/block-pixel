@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.Blocks
-import kiwi.hoonkun.plugins.pixel.BlocksRaw
+import kiwi.hoonkun.plugins.pixel.PackedBlocks
 import kotlin.math.ceil
 import kotlin.math.pow
 
@@ -9,7 +9,7 @@ class PaletteWorker {
 
     companion object {
 
-        fun BlocksRaw.unpack(paletteSize: Int): Blocks {
+        fun PackedBlocks.unpack(paletteSize: Int): Blocks {
             val bitsPerBlock = size(paletteSize)
             val bitMask = (2.0).pow(bitsPerBlock).toLong() - 1L
 
@@ -28,7 +28,7 @@ class PaletteWorker {
             return result
         }
 
-        fun Blocks.pack(paletteSize: Int): BlocksRaw {
+        fun Blocks.pack(paletteSize: Int): PackedBlocks {
             val bitsPerBlock = size(paletteSize)
             val blocksPerLong = Long.SIZE_BITS / bitsPerBlock
             val totalLength = ceil(4096.0f / blocksPerLong).toInt()
