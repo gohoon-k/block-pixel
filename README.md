@@ -13,7 +13,7 @@ Git 과 비슷한 명령으로 마인크래프트 지형 및 건축물을 버전
 &nbsp;&nbsp;&nbsp;&nbsp;[일관성](#일관성)  
 &nbsp;&nbsp;&nbsp;&nbsp;[병합](#병합)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[병합의 중단](#병합의-중단)  
-&nbsp;&nbsp;&nbsp;&nbsp;[기존 Overworld 월드와 버전관리 Overworld 월드](#-overworld---overworld-)  
+&nbsp;&nbsp;&nbsp;&nbsp;[기존 Overworld 월드와 버전관리 Overworld 월드](#기존-Overworld-월드와-버전관리-Overworld-월드)  
 [주의사항](#주의사항)  
 &nbsp;&nbsp;&nbsp;&nbsp;[저장소 초기화](#저장소-초기화)  
 &nbsp;&nbsp;&nbsp;&nbsp;[detached HEAD](#detached-head)  
@@ -97,7 +97,7 @@ Git 리셋을 진행합니다. 헤드의 위치를 n커밋 뒤로 옮기거나 �
   
 
 - ```/pixel tp <target> <dimension>```  
-플레이어를 지정한 월드의 동일한 좌표 위치로 텔레포트합니다.<sup>[[4]](#-overworld---overworld-)</sup>
+플레이어를 지정한 월드의 동일한 좌표 위치로 텔레포트합니다.<sup>[[4]](#기존-Overworld-월드와-버전관리-Overworld-월드)</sup>
   - target : 텔레포트할 플레이어의 닉네임
   - dimension : 도착 월드. dummy 혹은 overworld 중 하나.
   
@@ -129,7 +129,7 @@ Git 리셋을 진행합니다. 헤드의 위치를 n커밋 뒤로 옮기거나 �
 
 나머지 사항은 Git 의 그것과 최대한 비슷하도록 구성했습니다.
 
-몇몇 커맨드를 수행하면 엔터를 치자 마자 갑자기 월드가 사라지는 것처럼 보이는데, 월드를 언로드하여 데이터를 읽기 위해 잠시 해당 월드에 있는 플레이어를 공허 세계<sup>[[4]](#-overworld---overworld-)</sup>로 이동시킨 것입니다.  
+몇몇 커맨드를 수행하면 엔터를 치자 마자 갑자기 월드가 사라지는 것처럼 보이는데, 월드를 언로드하여 데이터를 읽기 위해 잠시 해당 월드에 있는 플레이어를 공허 세계<sup>[[4]](#기존-Overworld-월드와-버전관리-Overworld-월드)</sup>로 이동시킨 것입니다.  
 월드를 정상적으로 읽고, 다시 로드가 성공할 경우 자동으로 다시 돌아오며, 만약 그렇지 않더라도 서버를 재시작한 후 `/pixel tp` 명령을 통해 원래 세계로 돌아갈 수 있습니다.
 
 
