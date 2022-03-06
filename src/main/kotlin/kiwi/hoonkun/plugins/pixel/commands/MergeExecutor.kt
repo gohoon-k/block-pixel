@@ -2,8 +2,8 @@ package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker.Companion.writeToClient
+import kiwi.hoonkun.plugins.pixel.worker.IOWorker
+import kiwi.hoonkun.plugins.pixel.worker.IOWorker.Companion.writeToClient
 import kiwi.hoonkun.plugins.pixel.worker.RegionWorker
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
@@ -71,7 +71,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             if (message != null) {
                 sendTitle("finished merging, reloading world...")
 
-                PixelWorker.replaceFromVersionControl(plugin, dimensions, needsUnload = false)
+                IOWorker.replaceFromVersionControl(plugin, dimensions, needsUnload = false)
 
                 dimensions.forEach {
                     WorldLoader.returnPlayersTo(plugin, it)
@@ -136,7 +136,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
         sendTitle("reading current regions...")
-        val into = PixelWorker.read(dimensions)
+        val into = IOWorker.read(dimensions)
 
         try {
             git.checkout().setName(source).call()
@@ -150,7 +150,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
-        val from = PixelWorker.read(dimensions)
+        val from = IOWorker.read(dimensions)
 
         val commitLookup = RevWalk(git.repository)
         val intoC = commitLookup.lookupCommit(intoCommit.id)
@@ -166,7 +166,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         git.checkout().setName(mergeBase.name).call()
 
         sendTitle("reading merge-base regions...")
-        val ancestor = PixelWorker.read(dimensions)
+        val ancestor = IOWorker.read(dimensions)
 
         val branch = initialBranch
 
@@ -208,7 +208,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         state = RELOADING_WORLDS
 
         sendTitle("light updated finished, reloading world...")
-        PixelWorker.addToVersionControl(plugin, dimensions, needsLoad = false)
+        IOWorker.addToVersionControl(plugin, dimensions, needsLoad = false)
 
         state = COMMITTING
 

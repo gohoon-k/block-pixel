@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
+import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
@@ -29,7 +29,7 @@ class ResetExecutor(private val plugin: Entry): Executor() {
                 .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
                 .call()
 
-            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+            IOWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("reset", exception)
         } catch (exception: UnknownDimensionException) {

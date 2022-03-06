@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
+import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.CheckoutResult
 import org.eclipse.jgit.api.Git
@@ -28,7 +28,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
         if (args[0] == "-recover") {
             git.checkout().setStartPoint("HEAD").setAllPaths(true).call()
-            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+            IOWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
             return CommandExecuteResult(true, "cleaned versioned directory to ${repo.branch}")
         }
 
@@ -46,7 +46,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            PixelWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+            IOWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("checkout", exception)
         } catch (exception: UnknownDimensionException) {

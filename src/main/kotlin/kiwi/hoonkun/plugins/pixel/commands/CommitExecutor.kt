@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.PixelWorker
+import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
@@ -29,7 +29,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
             return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before commit.")
 
         try {
-            PixelWorker.addToVersionControl(plugin, dimensions(args[0]))
+            IOWorker.addToVersionControl(plugin, dimensions(args[0]))
         } catch (exception: UnknownDimensionException) {
             return createDimensionExceptionResult(exception)
         }

@@ -6,7 +6,7 @@ import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
 
 import java.io.File
 
-class PixelWorker {
+class IOWorker {
 
     companion object {
 
