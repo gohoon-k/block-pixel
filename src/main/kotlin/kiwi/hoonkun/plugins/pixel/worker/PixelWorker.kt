@@ -45,26 +45,22 @@ class PixelWorker {
         suspend fun addToVersionControl(
             plugin: Entry,
             dimensions: List<String>,
-            unload: Boolean = true,
-            movePlayer: Boolean = true,
-            reload: Boolean = true,
-            returnPlayer: Boolean = true
+            needsUnload: Boolean = true,
+            needsLoad: Boolean = true
         ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, false, unload, movePlayer, reload, returnPlayer)
+                copyRegions(plugin, dimension, false, needsUnload, needsLoad)
             }
         }
 
         suspend fun replaceFromVersionControl(
             plugin: Entry,
             dimensions: List<String>,
-            unload: Boolean = true,
-            movePlayer: Boolean = true,
-            reload: Boolean = true,
-            returnPlayer: Boolean = true
+            needsUnload: Boolean = true,
+            needsLoad: Boolean = true
         ) {
             dimensions.forEach { dimension ->
-                copyRegions(plugin, dimension, true, unload, movePlayer, reload, returnPlayer)
+                copyRegions(plugin, dimension, true, needsUnload, needsLoad)
             }
         }
 
@@ -72,13 +68,13 @@ class PixelWorker {
             plugin: Entry,
             dimension: String,
             replace: Boolean,
-            unload: Boolean = true,
-            movePlayer: Boolean = true,
-            reload: Boolean = true,
-            returnPlayer: Boolean = true
+            needsUnload: Boolean = true,
+            needsLoad: Boolean = true
         ) {
-            if (movePlayer) WorldLoader.movePlayersTo(plugin, dimension)
-            if (unload) WorldLoader.unload(plugin, dimension)
+            if (needsUnload) {
+                WorldLoader.movePlayersTo(plugin, dimension)
+                WorldLoader.unload(plugin, dimension)
+            }
 
             val fromPath = (if (!replace) clientDimensions else versionedDimension)[dimension]
                 ?: throw Exception("invalid dimension '$dimension'")
@@ -93,8 +89,10 @@ class PixelWorker {
             if (!toDirectory.exists()) toDirectory.mkdirs()
             fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
 
-            if (reload) WorldLoader.load(plugin, dimension)
-            if (returnPlayer) WorldLoader.returnPlayersTo(plugin, dimension)
+            if (needsLoad) {
+                WorldLoader.load(plugin, dimension)
+                WorldLoader.returnPlayersTo(plugin, dimension)
+            }
         }
 
     }

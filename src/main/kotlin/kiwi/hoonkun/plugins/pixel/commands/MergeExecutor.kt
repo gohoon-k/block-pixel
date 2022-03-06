@@ -71,7 +71,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             if (message != null) {
                 sendTitle("finished merging, reloading world...")
 
-                PixelWorker.replaceFromVersionControl(plugin, dimensions, unload = false, movePlayer = false)
+                PixelWorker.replaceFromVersionControl(plugin, dimensions, needsUnload = false)
 
                 dimensions.forEach {
                     WorldLoader.returnPlayersTo(plugin, it)
@@ -208,7 +208,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         state = RELOADING_WORLDS
 
         sendTitle("light updated finished, reloading world...")
-        PixelWorker.addToVersionControl(plugin, dimensions, reload = false, returnPlayer = false)
+        PixelWorker.addToVersionControl(plugin, dimensions, needsLoad = false)
 
         state = COMMITTING
 
