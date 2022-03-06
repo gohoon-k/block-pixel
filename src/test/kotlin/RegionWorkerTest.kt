@@ -1,28 +1,25 @@
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldNotBe
 import io.kotlintest.specs.StringSpec
-import kiwi.hoonkun.plugins.pixel.RegionFiles
-import kiwi.hoonkun.plugins.pixel.RegionLocation
-import kiwi.hoonkun.plugins.pixel.Regions
-import kiwi.hoonkun.plugins.pixel.findChunk
+import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.nbt.tag.IntTag
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toAnvilFormat
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.read
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toNBT
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
 import java.io.File
 
 class RegionWorkerTest: StringSpec() {
 
     init {
 
-        val testRegionLocation = RegionLocation(0, 0)
+        val testRegionLocation = AnvilLocation(0, 0)
 
         val uri = this::class.java.classLoader.getResource("r.0.0.mca")?.toURI() ?: throw Exception("cannot find region file.")
         val regionFile = File(uri)
-        val testRegions = arrayOf(regionFile)
+        val testAnvilFiles = arrayOf(regionFile)
 
         "convert between region and client region" {
-            val regions1 = RegionFiles(testRegions).read().toNBT()
+            val regions1 = testAnvilFiles.read().toNBT { timestamp, nbt -> Chunk(timestamp, nbt) }
 
             val version1 = getDataVersion(regions1)
 
@@ -30,9 +27,9 @@ class RegionWorkerTest: StringSpec() {
 
             val clientRegions = regions1.toAnvilFormat()
 
-            clientRegions.get[testRegionLocation]!!.size % 4096 shouldBe 0
+            clientRegions[testRegionLocation]!!.size % 4096 shouldBe 0
 
-            val regions2 = clientRegions.toNBT()
+            val regions2 = clientRegions.toNBT { timestamp, nbt -> Chunk(timestamp, nbt) }
 
             val version2 = getDataVersion(regions2)
 
@@ -43,8 +40,8 @@ class RegionWorkerTest: StringSpec() {
 
     }
 
-    private fun getDataVersion(from: Regions): Int {
-        return from.get[RegionLocation(0, 0)]!!
+    private fun getDataVersion(from: NBT<Chunk>): Int {
+        return from[AnvilLocation(0, 0)]!!
             .findChunk(0, 0)!!
             .nbt["DataVersion"]!!.getAs<IntTag>().value
     }

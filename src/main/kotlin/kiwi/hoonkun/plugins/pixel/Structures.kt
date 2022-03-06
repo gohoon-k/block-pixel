@@ -5,24 +5,26 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 
 import java.io.File
 
-data class ChunkLocation(val x: Int, val z: Int)
-data class RegionLocation(val x: Int, val z: Int)
+data class NBTLocation(val x: Int, val z: Int)
+data class AnvilLocation(val x: Int, val z: Int)
 
-@JvmInline
-value class RegionFiles(val get: Array<File>)
+typealias AnvilFiles = Array<File>
+typealias Anvils = Map<AnvilLocation, ByteArray>
+typealias NBT<T> = Map<AnvilLocation, List<T>>
 
-@JvmInline
-value class RegionsAnvil(val get: Map<RegionLocation, ByteArray>)
-
-@JvmInline
-value class Regions(val get: Map<RegionLocation, List<Chunk>>)
 typealias PackedBlocks = LongArray
 typealias Blocks = List<Int>
 
-data class Chunk(val timestamp: Int, val nbt: CompoundTag) {
-    val location = ChunkLocation(xPos, zPos)
+abstract class NBTData(val timestamp: Int, val nbt: CompoundTag) {
+    abstract val location: NBTLocation
+}
+
+class Chunk(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+    override val location = NBTLocation(xPos, zPos)
+
     private val xPos get() = nbt["xPos"]!!.getAs<IntTag>().value
     private val zPos get() = nbt["zPos"]!!.getAs<IntTag>().value
+
     val sections = nbt["sections"]!!.getAs<ListTag>().value.map { Section(it.getAs()) }
     var blockEntities
         get() = nbt["block_entities"]!!.getAs<ListTag>().value.map { BlockEntity(it.getAs()) }
@@ -51,7 +53,7 @@ data class BlockStates(private val nbt: CompoundTag) {
         set(value) {
             nbt["palette"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "palette")
         }
-    var data
+    var data: PackedBlocks
         get() = nbt["data"]?.getAs<LongArrayTag>()?.value ?: LongArray(0)
         set(value) {
             nbt["data"] = LongArrayTag(value, "data")

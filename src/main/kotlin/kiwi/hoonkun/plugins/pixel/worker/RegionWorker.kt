@@ -2,136 +2,32 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.commands.Executor
-
-import kiwi.hoonkun.plugins.pixel.nbt.Tag
-import kiwi.hoonkun.plugins.pixel.nbt.TagType
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.decompress
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.compress
-import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
-
-import kotlin.math.ceil
 
 import kotlinx.coroutines.delay
 
 import org.bukkit.ChatColor
-
-import java.io.ByteArrayOutputStream
 
 
 class RegionWorker {
 
     companion object {
 
-        private const val HEADER_LENGTH = 8192
-        private const val SECTOR_UNIT = 4096
-
-        private val dg = ChatColor.DARK_GRAY
         private val g = ChatColor.GRAY
         private val w = ChatColor.WHITE
 
-        fun RegionFiles.read(): RegionsAnvil {
-            val result = mutableMapOf<RegionLocation, ByteArray>()
+        suspend fun merge(from: NBT<Chunk>, into: NBT<Chunk>, ancestor: NBT<Chunk>, mode: MergeMode): NBT<Chunk> {
+            val merged = mutableMapOf<AnvilLocation, List<Chunk>>()
 
-            get.forEach {
-                val start = System.currentTimeMillis()
-
-                val segments = it.name.split(".")
-                val regionX = segments[1].toInt()
-                val regionZ = segments[2].toInt()
-
-                result[RegionLocation(regionX, regionZ)] = it.readBytes()
-
-                Executor.sendTitle("${g}reading client region $w${it.name}$g finished$dg in ${System.currentTimeMillis() - start}ms")
-            }
-
-            return RegionsAnvil(result)
-        }
-
-        fun Regions.toAnvilFormat(): RegionsAnvil {
-            val result = mutableMapOf<RegionLocation, ByteArray>()
-
-            get.entries.forEach { (regionLocation, chunks) ->
-                val regionStart = System.currentTimeMillis()
-
-                val locationHeader = ByteArray(4096)
-                val timestampsHeader = ByteArray(4096)
-
-                val stream = ByteArrayOutputStream()
-
-                var sector = HEADER_LENGTH / SECTOR_UNIT
-
-                chunks.forEach { chunk ->
-                    val chunkX = chunk.nbt.value["xPos"]?.getAs<IntTag>()?.value ?: throw Exception("could not find value 'xPos'")
-                    val chunkZ = chunk.nbt.value["zPos"]?.getAs<IntTag>()?.value ?: throw Exception("could not find value 'zPos'")
-
-                    val headerOffset = 4 * ((chunkX and 31) + (chunkZ and 31) * 32)
-
-                    val compressedNbt = compress(chunk.nbt)
-
-                    val offset = ByteArray (4) { i -> (sector shr ((3 - i) * 8)).toByte() }
-                    val sectorCount = ceil(compressedNbt.size / SECTOR_UNIT.toFloat()).toInt().toByte()
-
-                    val location = byteArrayOf(offset[1], offset[2], offset[3], sectorCount)
-                    val timestamp = ByteArray (4) { i -> (chunk.timestamp shr ((3 - i)*8)).toByte() }
-
-                    location.forEachIndexed { index, byte -> locationHeader[headerOffset + index] = byte }
-                    timestamp.forEachIndexed { index, byte -> timestampsHeader[headerOffset + index] = byte }
-
-                    stream.write(compressedNbt)
-
-                    sector += sectorCount
-                }
-
-                val regionStream = ByteArrayOutputStream()
-                regionStream.write(locationHeader)
-                regionStream.write(timestampsHeader)
-                regionStream.write(stream.toByteArray())
-
-                result[regionLocation] = regionStream.toByteArray()
-
-                Executor.sendTitle("generating client region $g[$w${regionLocation.x}$g][$w${regionLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - regionStart}")
-            }
-
-            return RegionsAnvil(result)
-        }
-
-        fun RegionsAnvil.toNBT(): Regions {
-            val result = mutableMapOf<RegionLocation, List<Chunk>>()
-
-            get.entries.forEach { (regionLocation, bytes) ->
-                val start = System.currentTimeMillis()
-
-                val chunks = mutableListOf<Chunk>()
-
-                for (m in 0 until 32 * 32) {
-                    val i = 4 * (((m / 32) and 31) + ((m % 32) and 31) * 32)
-
-                    val (timestamp, buffer) = decompress(bytes, i) ?: continue
-
-                    chunks.add(Chunk(timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
-                }
-
-                result[regionLocation] = chunks
-
-                Executor.sendTitle("generating region $g[$w${regionLocation.x}$g][$w${regionLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - start}")
-            }
-
-            return Regions(result)
-        }
-
-        suspend fun merge(from: Regions, into: Regions, ancestor: Regions, mode: MergeMode): Regions {
-            val merged = mutableMapOf<RegionLocation, List<Chunk>>()
-
-            val (new, already) = from.get.entries.classificationByBoolean { !into.get.containsKey(it.key) }
+            val (new, already) = from.entries.classificationByBoolean { !into.containsKey(it.key) }
 
             new.forEach { merged[it.key] = it.value }
             already.map { it.key }.forEach { location ->
                 Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
                 val mergedChunks = mutableListOf<Chunk>()
-                associateChunk(from.get[location], into.get[location], ancestor.get[location])
+                associateChunk(from[location], into[location], ancestor[location])
                     .forEach { associatedMap ->
                         delay(1)
 
@@ -160,7 +56,7 @@ class RegionWorker {
 
             Executor.sendTitle("all regions merged")
 
-            return Regions(merged)
+            return merged
         }
 
         private fun mergeChunk(
@@ -267,8 +163,8 @@ class RegionWorker {
             return Pair(a, b)
         }
 
-        private fun associateChunk(from: List<Chunk>?, into: List<Chunk>?, ancestor: List<Chunk>?): Map<ChunkLocation, AssociatedChunk> {
-            val chunkMap = mutableMapOf<ChunkLocation, AssociatedChunk>()
+        private fun associateChunk(from: List<Chunk>?, into: List<Chunk>?, ancestor: List<Chunk>?): Map<NBTLocation, AssociatedChunk> {
+            val chunkMap = mutableMapOf<NBTLocation, AssociatedChunk>()
             from?.forEach {
                 if (!chunkMap.containsKey(it.location)) chunkMap[it.location] = AssociatedChunk()
                 chunkMap.getValue(it.location).from = it
@@ -285,7 +181,7 @@ class RegionWorker {
             return chunkMap
         }
 
-        private fun coordinate(location: ChunkLocation, sectionY: Byte, blockIndex: Int): Triple<Int, Int, Int> {
+        private fun coordinate(location: NBTLocation, sectionY: Byte, blockIndex: Int): Triple<Int, Int, Int> {
             val x = location.x
             val y = sectionY.toInt()
             val z = location.z

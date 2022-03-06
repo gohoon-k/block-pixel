@@ -1,15 +1,117 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
+import kiwi.hoonkun.plugins.pixel.*
+import kiwi.hoonkun.plugins.pixel.commands.Executor
+import kiwi.hoonkun.plugins.pixel.nbt.Tag
+import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.extensions.byte
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
+
+import org.bukkit.ChatColor
+
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.util.zip.Deflater
 import java.util.zip.Inflater
+import kotlin.math.ceil
 
 class MinecraftAnvilWorker {
 
     companion object {
+
+        private const val HEADER_LENGTH = 8192
+        private const val SECTOR_UNIT = 4096
+
+        val dg = ChatColor.DARK_GRAY
+        val g = ChatColor.GRAY
+        val w = ChatColor.WHITE
+
+        fun AnvilFiles.read(): Anvils {
+            val result = mutableMapOf<AnvilLocation, ByteArray>()
+
+            forEach {
+                val start = System.currentTimeMillis()
+
+                val segments = it.name.split(".")
+                val regionX = segments[1].toInt()
+                val regionZ = segments[2].toInt()
+
+                result[AnvilLocation(regionX, regionZ)] = it.readBytes()
+
+                Executor.sendTitle("${g}reading client anvil ${w}${it.name}${g} finished${dg} in ${System.currentTimeMillis() - start}ms")
+            }
+
+            return result
+        }
+
+        inline fun <T: NBTData> Anvils.toNBT(generator: (Int, CompoundTag) -> T): NBT<T> {
+            val result = mutableMapOf<AnvilLocation, List<T>>()
+
+            entries.forEach { (anvilLocation, bytes) ->
+                val start = System.currentTimeMillis()
+
+                val parts = mutableListOf<T>()
+
+                for (m in 0 until 32 * 32) {
+                    val i = 4 * (((m / 32) and 31) + ((m % 32) and 31) * 32)
+
+                    val (timestamp, buffer) = decompress(bytes, i) ?: continue
+
+                    parts.add(generator.invoke(timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
+                }
+
+                result[anvilLocation] = parts
+
+                Executor.sendTitle("generating nbt $g[$w${anvilLocation.x}$g][$w${anvilLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - start}")
+            }
+
+            return result
+        }
+
+        fun <T: NBTData> NBT<T>.toAnvilFormat(): Anvils {
+            val result = mutableMapOf<AnvilLocation, ByteArray>()
+
+            entries.forEach { (anvilLocation, dataList) ->
+                val regionStart = System.currentTimeMillis()
+
+                val locationHeader = ByteArray(4096)
+                val timestampsHeader = ByteArray(4096)
+
+                val stream = ByteArrayOutputStream()
+
+                var sector = HEADER_LENGTH / SECTOR_UNIT
+
+                dataList.forEach { data ->
+                    val headerOffset = 4 * ((data.location.x and 31) + (data.location.z and 31) * 32)
+
+                    val compressedNbt = compress(data.nbt)
+
+                    val offset = ByteArray (4) { i -> (sector shr ((3 - i) * 8)).toByte() }
+                    val sectorCount = ceil(compressedNbt.size / SECTOR_UNIT.toFloat()).toInt().toByte()
+
+                    val location = byteArrayOf(offset[1], offset[2], offset[3], sectorCount)
+                    val timestamp = ByteArray (4) { i -> (data.timestamp shr ((3 - i)*8)).toByte() }
+
+                    location.forEachIndexed { index, byte -> locationHeader[headerOffset + index] = byte }
+                    timestamp.forEachIndexed { index, byte -> timestampsHeader[headerOffset + index] = byte }
+
+                    stream.write(compressedNbt)
+
+                    sector += sectorCount
+                }
+
+                val regionStream = ByteArrayOutputStream()
+                regionStream.write(locationHeader)
+                regionStream.write(timestampsHeader)
+                regionStream.write(stream.toByteArray())
+
+                result[anvilLocation] = regionStream.toByteArray()
+
+                Executor.sendTitle("generating client region ${g}[${w}${anvilLocation.x}${g}][${w}${anvilLocation.z}${g}]${w} finished${dg} in ${System.currentTimeMillis() - regionStart}")
+            }
+
+            return result
+        }
 
         fun decompress(region: ByteArray, headerOffset: Int): Pair<Int, ByteBuffer>? {
             val offset = ByteBuffer.wrap(byteArrayOf(0, region[headerOffset], region[headerOffset + 1], region[headerOffset + 2])).int * 4096
