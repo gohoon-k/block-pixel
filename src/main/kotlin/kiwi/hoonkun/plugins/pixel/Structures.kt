@@ -3,20 +3,29 @@ package kiwi.hoonkun.plugins.pixel
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 
-import java.io.File
-
-data class NBTLocation(val x: Int, val z: Int)
 data class AnvilLocation(val x: Int, val z: Int)
 
-typealias AnvilFiles = Array<File>
-typealias Anvils = Map<AnvilLocation, ByteArray>
+typealias WorldAnvilFormat = Map<AnvilType, AnvilFormat>
+typealias AnvilFormat = Map<AnvilLocation, ByteArray>
+
+data class NBTLocation(val x: Int, val z: Int)
+
 typealias NBT<T/* :NBTData */> = Map<AnvilLocation, List<T>>
+typealias MutableNBT<T/* :NBTData */> = MutableMap<AnvilLocation, List<T>>
+
+typealias WorldNBTs = Map<String, WorldNBT>
+
+data class WorldNBT(
+    val chunk: NBT<Chunk>,
+    val entity: NBT<Entity>,
+    val poi: NBT<Poi>
+)
 
 typealias PackedBlocks = LongArray
 typealias Blocks = List<Int>
 
 enum class AnvilType(val path: String) {
-    REGION("region"), POI("poi"), ENTITY("entity")
+    CHUNK("region"), POI("poi"), ENTITY("entity")
 }
 
 abstract class NBTData(val timestamp: Int, val nbt: CompoundTag) {

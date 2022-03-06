@@ -10,6 +10,7 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import org.bukkit.ChatColor
 
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.ByteBuffer
 import java.util.zip.Deflater
 import java.util.zip.Inflater
@@ -26,7 +27,7 @@ class MinecraftAnvilWorker {
         val g = ChatColor.GRAY
         val w = ChatColor.WHITE
 
-        fun AnvilFiles.read(): Anvils {
+        fun Array<File>.read(): AnvilFormat {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             forEach {
@@ -44,7 +45,7 @@ class MinecraftAnvilWorker {
             return result
         }
 
-        inline fun <T: NBTData> Anvils.toNBT(generator: (NBTLocation, Int, CompoundTag) -> T): NBT<T> {
+        inline fun <T: NBTData> AnvilFormat.toNBT(generator: (NBTLocation, Int, CompoundTag) -> T): NBT<T> {
             val result = mutableMapOf<AnvilLocation, List<T>>()
 
             entries.forEach { (anvilLocation, bytes) ->
@@ -70,7 +71,15 @@ class MinecraftAnvilWorker {
             return result
         }
 
-        fun <T: NBTData> NBT<T>.toAnvilFormat(): Anvils {
+        fun WorldNBT.toWorldAnvilFormat(): WorldAnvilFormat {
+            return mapOf(
+                AnvilType.CHUNK to chunk.toAnvilFormat(),
+                AnvilType.ENTITY to entity.toAnvilFormat(),
+                AnvilType.POI to poi.toAnvilFormat()
+            )
+        }
+
+        private fun <T: NBTData> NBT<T>.toAnvilFormat(): AnvilFormat {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             entries.forEach { (anvilLocation, dataList) ->

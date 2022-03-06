@@ -17,17 +17,20 @@ class MergeWorker {
         private val g = ChatColor.GRAY
         private val w = ChatColor.WHITE
 
-        suspend fun merge(from: NBT<Chunk>, into: NBT<Chunk>, ancestor: NBT<Chunk>, mode: MergeMode): NBT<Chunk> {
-            val merged = mutableMapOf<AnvilLocation, List<Chunk>>()
+        suspend fun merge(from: WorldNBT, into: WorldNBT, ancestor: WorldNBT, mode: MergeMode): WorldNBT {
+            val mergedChunk: MutableNBT<Chunk> = mutableMapOf()
+            val mergedEntity: MutableNBT<Entity> = mutableMapOf()
+            val mergedPoi: MutableNBT<Poi> = mutableMapOf()
 
-            val (new, already) = from.entries.classificationByBoolean { !into.containsKey(it.key) }
+            val (newChunk, existsChunk) =
+                from.chunk.entries.classificationByBoolean { !into.chunk.containsKey(it.key) }
 
-            new.forEach { merged[it.key] = it.value }
-            already.map { it.key }.forEach { location ->
+            newChunk.forEach { mergedChunk[it.key] = it.value }
+            existsChunk.map { it.key }.forEach { location ->
                 Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
                 val mergedChunks = mutableListOf<Chunk>()
-                associateChunk(from[location], into[location], ancestor[location])
+                associateChunk(from.chunk[location], into.chunk[location], ancestor.chunk[location])
                     .forEach { associatedMap ->
                         delay(1)
 
@@ -51,12 +54,12 @@ class MergeWorker {
                         }
                     }
 
-                merged[location] = mergedChunks
+                mergedChunk[location] = mergedChunks
             }
 
             Executor.sendTitle("all regions merged")
 
-            return merged
+            return WorldNBT(mergedChunk, mergedEntity, mergedPoi)
         }
 
         private fun mergeChunk(

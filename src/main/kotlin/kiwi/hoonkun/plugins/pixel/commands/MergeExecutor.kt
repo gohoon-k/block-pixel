@@ -1,9 +1,9 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toWorldAnvilFormat
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
@@ -135,7 +135,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
         sendTitle("reading current regions...")
-        val into = IOWorker.readVersionedRegionAnvils(dimensions)
+        val into = IOWorker.repositoryWorldNBTs(dimensions)
 
         try {
             git.checkout().setName(source).call()
@@ -149,7 +149,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
-        val from = IOWorker.readVersionedRegionAnvils(dimensions)
+        val from = IOWorker.repositoryWorldNBTs(dimensions)
 
         val commitLookup = RevWalk(git.repository)
         val intoC = commitLookup.lookupCommit(intoCommit.id)
@@ -165,7 +165,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         git.checkout().setName(mergeBase.name).call()
 
         sendTitle("reading merge-base regions...")
-        val ancestor = IOWorker.readVersionedRegionAnvils(dimensions)
+        val ancestor = IOWorker.repositoryWorldNBTs(dimensions)
 
         val branch = initialBranch
 
@@ -178,15 +178,15 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         try {
             state = MERGING
 
-            val mergedDimensions = dimensions.mapIndexed { index, dimension ->
+            val mergedDimensions = dimensions.map { dimension ->
                 sendTitle("start merging '$dimension'...")
                 delay(1000)
                 val clientRegions = MergeWorker.merge(
-                    from[index],
-                    into[index],
-                    ancestor[index],
+                    from.getValue(dimension),
+                    into.getValue(dimension),
+                    ancestor.getValue(dimension),
                     mode
-                ).toAnvilFormat()
+                ).toWorldAnvilFormat()
                 sendTitle("merging '$dimension' finished.")
                 dimension to clientRegions
             }.toMap()
@@ -195,7 +195,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
                 state = RELOADING_WORLDS
                 WorldLoader.movePlayersTo(plugin, dimension)
                 WorldLoader.unload(plugin, dimension)
-                IOWorker.writeRegionAnvilToClient(regions, dimension)
+                IOWorker.writeWorldAnvilToClient(regions, dimension)
                 WorldLoader.load(plugin, dimension)
                 state = APPLYING_LIGHTS
                 WorldLoader.updateLights(plugin, dimension)

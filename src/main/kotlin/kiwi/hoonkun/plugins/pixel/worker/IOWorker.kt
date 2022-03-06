@@ -23,47 +23,52 @@ class IOWorker {
         private fun getVersionedPath(anvilType: AnvilType, dimension: String) =
             "${Entry.versionedFolder.absolutePath}/${dimension}/${anvilType.path}"
 
-        private inline fun <T: NBTData> readVersionedAnvils(
-            anvilType: AnvilType,
-            dimensions: List<String>,
-            generator: (NBTLocation, Int, CompoundTag) -> T
-        ): List<NBT<T>> {
-            val result = mutableListOf<NBT<T>>()
-            dimensions.forEach { dimension ->
-                val dimensionPath = getVersionedPath(anvilType, dimension)
-                val anvilFiles = File(dimensionPath).listFiles()
-                if (anvilFiles == null) result.add(mapOf())
-                else result.add(anvilFiles.read().toNBT(generator))
-            }
-            return result
+
+        fun repositoryWorldNBTs(
+            dimensions: List<String>
+        ): WorldNBTs {
+            return dimensions.associateWith { WorldNBT(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
         }
 
-        fun readVersionedRegionAnvils(dimensions: List<String>): List<NBT<Chunk>> {
-            return readVersionedAnvils(
-                AnvilType.REGION,
-                dimensions
+        private inline fun <T: NBTData> repositoryNBT(
+            anvilType: AnvilType,
+            dimension: String,
+            generator: (NBTLocation, Int, CompoundTag) -> T
+        ): NBT<T> {
+            val dimensionPath = getVersionedPath(anvilType, dimension)
+            val anvilFiles = File(dimensionPath).listFiles()
+
+            return anvilFiles?.read()?.toNBT(generator) ?: mapOf()
+        }
+
+        private fun repositoryChunk(dimension: String): NBT<Chunk> {
+            return repositoryNBT(
+                AnvilType.CHUNK,
+                dimension
             ) { _, timestamp, nbt -> Chunk(timestamp, nbt) }
         }
 
-        fun readVersionedPoiAnvils(dimensions: List<String>): List<NBT<Poi>> {
-            return readVersionedAnvils(
+        private fun repositoryPoi(dimension: String): NBT<Poi> {
+            return repositoryNBT(
                 AnvilType.POI,
-                dimensions
+                dimension
             ) { location, timestamp, nbt -> Poi(location, timestamp, nbt) }
         }
 
-        fun readVersionedEntityAnvils(dimensions: List<String>): List<NBT<Entity>> {
-            return readVersionedAnvils(
+        private fun repositoryEntity(dimension: String): NBT<Entity> {
+            return repositoryNBT(
                 AnvilType.ENTITY,
-                dimensions
+                dimension
             ) { _, timestamp, nbt -> Entity(timestamp, nbt) }
         }
 
-        fun writeRegionAnvilToClient(regionAnvil: Anvils, dimension: String) {
-            val path = getClientPath(AnvilType.REGION, dimension)
-            regionAnvil.entries.forEach { (location, bytes) ->
-                val file = File("$path/r.${location.x}.${location.z}.mca")
-                file.writeBytes(bytes)
+        fun writeWorldAnvilToClient(regionAnvil: WorldAnvilFormat, dimension: String) {
+            regionAnvil.entries.forEach { (type, anvil) ->
+                val path = getClientPath(type, dimension)
+                anvil.entries.forEach { (location, bytes) ->
+                    val file = File("$path/r.${location.x}.${location.z}.mca")
+                    file.writeBytes(bytes)
+                }
             }
         }
 
