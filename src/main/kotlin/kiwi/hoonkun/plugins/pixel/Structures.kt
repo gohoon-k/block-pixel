@@ -87,7 +87,21 @@ data class BlockEntity(val nbt: CompoundTag) {
 }
 
 class Poi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+    val data = PoiData(nbt["Data"]!!.getAs())
+}
 
+class PoiData(nbt: CompoundTag) {
+    val sections = nbt["Sections"]!!.getAs<CompoundTag>().value.entries.associate { (k, v) -> k.toInt() to PoiSection(v.getAs()) }
+}
+
+data class PoiSection(private val nbt: CompoundTag) {
+    val valid = nbt["Valid"]!!.getAs<ByteTag>().value
+    val records = nbt["Records"]!!.getAs<ListTag>().value.map { PoiRecord(it.getAs()) }
+}
+
+data class PoiRecord(private val nbt: CompoundTag) {
+    val pos = nbt["pos"]!!.getAs<IntArrayTag>().value
+    val freeTickets = nbt["free_tickets"]!!.getAs<IntTag>().value
 }
 
 class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
@@ -97,6 +111,24 @@ class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
     private val zPos = position[1]
 
     override val location: NBTLocation = NBTLocation(xPos, zPos)
+
+    val brain = EntityBrain(nbt["Brain"]!!.getAs())
+}
+
+data class EntityBrain(private val nbt: CompoundTag) {
+    val memories = EntityMemories(nbt["memories"]!!.getAs())
+}
+
+data class EntityMemories(private val nbt: CompoundTag) {
+    val home = nbt["minecraft:home"]?.getAs<CompoundTag>()?.let { EntryMemoryValue(it) }
+    val jobSite = nbt["minecraft:job_site"]?.getAs<CompoundTag>()?.let { EntryMemoryValue(it) }
+    val meetingPoint = nbt["minecraft:meeting_point"]?.getAs<CompoundTag>()?.let { EntryMemoryValue(it) }
+}
+
+data class EntryMemoryValue(private val nbt: CompoundTag) {
+    private val value = nbt["value"]!!.getAs<CompoundTag>()
+    val pos = value["pos"]!!.getAs<IntArrayTag>().value
+    val dimension = value["dimension"]!!.getAs<StringTag>().value
 }
 
 fun List<Chunk>.findChunk(x: Int, z: Int): Chunk? = find {
