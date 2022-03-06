@@ -31,7 +31,7 @@ class RegionWorker {
         private val g = ChatColor.GRAY
         private val w = ChatColor.WHITE
 
-        fun ClientRegionFiles.readClientRegions(): ClientRegions {
+        fun RegionFiles.read(): RegionsAnvil {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
             get.forEach {
@@ -46,10 +46,10 @@ class RegionWorker {
                 Executor.sendTitle("${g}reading client region $w${it.name}$g finished$dg in ${System.currentTimeMillis() - start}ms")
             }
 
-            return ClientRegions(result)
+            return RegionsAnvil(result)
         }
 
-        fun Regions.toClientRegions(): ClientRegions {
+        fun Regions.toAnvilFormat(): RegionsAnvil {
             val result = mutableMapOf<RegionLocation, ByteArray>()
 
             get.entries.forEach { (regionLocation, chunks) ->
@@ -94,10 +94,10 @@ class RegionWorker {
                 Executor.sendTitle("generating client region $g[$w${regionLocation.x}$g][$w${regionLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - regionStart}")
             }
 
-            return ClientRegions(result)
+            return RegionsAnvil(result)
         }
 
-        fun ClientRegions.toRegions(): Regions {
+        fun RegionsAnvil.toNBT(): Regions {
             val result = mutableMapOf<RegionLocation, List<Chunk>>()
 
             get.entries.forEach { (regionLocation, bytes) ->
@@ -285,8 +285,6 @@ class RegionWorker {
             return chunkMap
         }
 
-        private data class AssociatedChunk(var from: Chunk? = null, var into: Chunk? = null, var ancestor: Chunk? = null)
-
         private fun coordinate(location: ChunkLocation, sectionY: Byte, blockIndex: Int): Triple<Int, Int, Int> {
             val x = location.x
             val y = sectionY.toInt()
@@ -303,5 +301,7 @@ class RegionWorker {
         }
 
     }
+
+    private data class AssociatedChunk(var from: Chunk? = null, var into: Chunk? = null, var ancestor: Chunk? = null)
 
 }

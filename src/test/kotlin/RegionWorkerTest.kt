@@ -1,14 +1,14 @@
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldNotBe
 import io.kotlintest.specs.StringSpec
-import kiwi.hoonkun.plugins.pixel.ClientRegionFiles
+import kiwi.hoonkun.plugins.pixel.RegionFiles
 import kiwi.hoonkun.plugins.pixel.RegionLocation
 import kiwi.hoonkun.plugins.pixel.Regions
 import kiwi.hoonkun.plugins.pixel.findChunk
 import kiwi.hoonkun.plugins.pixel.nbt.tag.IntTag
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toClientRegions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toRegions
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toAnvilFormat
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toNBT
 import java.io.File
 
 class RegionWorkerTest: StringSpec() {
@@ -22,17 +22,17 @@ class RegionWorkerTest: StringSpec() {
         val testRegions = arrayOf(regionFile)
 
         "convert between region and client region" {
-            val regions1 = ClientRegionFiles(testRegions).readClientRegions().toRegions()
+            val regions1 = RegionFiles(testRegions).read().toNBT()
 
             val version1 = getDataVersion(regions1)
 
             version1 shouldNotBe null
 
-            val clientRegions = regions1.toClientRegions()
+            val clientRegions = regions1.toAnvilFormat()
 
             clientRegions.get[testRegionLocation]!!.size % 4096 shouldBe 0
 
-            val regions2 = clientRegions.toRegions()
+            val regions2 = clientRegions.toNBT()
 
             val version2 = getDataVersion(regions2)
 

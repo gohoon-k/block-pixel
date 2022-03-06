@@ -1,14 +1,14 @@
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import kiwi.hoonkun.plugins.pixel.ClientRegionFiles
+import kiwi.hoonkun.plugins.pixel.RegionFiles
 import kiwi.hoonkun.plugins.pixel.RegionLocation
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.ListTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toRegions
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toNBT
 import java.io.File
 
 class PaletteWorkerTest: StringSpec() {
@@ -21,7 +21,7 @@ class PaletteWorkerTest: StringSpec() {
         val regionFile = File(uri)
         val testRegions = arrayOf(regionFile)
 
-        val chunks = ClientRegionFiles(testRegions).readClientRegions().toRegions().get[testRegionLocation]!!
+        val chunks = RegionFiles(testRegions).read().toNBT().get[testRegionLocation]!!
 
         "unpack and pack block_states.data" {
 

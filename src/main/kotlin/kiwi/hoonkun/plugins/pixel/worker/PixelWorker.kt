@@ -1,11 +1,11 @@
 package kiwi.hoonkun.plugins.pixel.worker
 
-import kiwi.hoonkun.plugins.pixel.ClientRegionFiles
-import kiwi.hoonkun.plugins.pixel.ClientRegions
+import kiwi.hoonkun.plugins.pixel.RegionFiles
+import kiwi.hoonkun.plugins.pixel.RegionsAnvil
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.Regions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.readClientRegions
-import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toRegions
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.RegionWorker.Companion.toNBT
 import java.io.File
 
 class PixelWorker {
@@ -29,12 +29,12 @@ class PixelWorker {
             dimensions.forEach { dimension ->
                 val dimensionPath = versionedDimension[dimension] ?: throw Exception("invalid dimension")
                 val files = File(dimensionPath).listFiles() ?: return@forEach
-                result.add(ClientRegionFiles(files).readClientRegions().toRegions())
+                result.add(RegionFiles(files).read().toNBT())
             }
             return result
         }
 
-        suspend fun ClientRegions.writeToClient(plugin: Entry, dimension: String) {
+        suspend fun RegionsAnvil.writeToClient(plugin: Entry, dimension: String) {
             val path = clientDimensions[dimension] ?: throw Exception("invalid dimension")
             WorldLoader.unload(plugin, dimension)
             get.entries.forEach { (location, bytes) ->

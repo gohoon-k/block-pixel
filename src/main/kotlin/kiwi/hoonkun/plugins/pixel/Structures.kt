@@ -9,10 +9,10 @@ data class ChunkLocation(val x: Int, val z: Int)
 data class RegionLocation(val x: Int, val z: Int)
 
 @JvmInline
-value class ClientRegionFiles(val get: Array<File>)
+value class RegionFiles(val get: Array<File>)
 
 @JvmInline
-value class ClientRegions(val get: Map<RegionLocation, ByteArray>)
+value class RegionsAnvil(val get: Map<RegionLocation, ByteArray>)
 
 @JvmInline
 value class Regions(val get: Map<RegionLocation, List<Chunk>>)
