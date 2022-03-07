@@ -25,7 +25,7 @@ class TextWidthUtils {
                 width += widths[this[index]] ?: 5
                 width += letterSpacing
                 result += this[index]
-                if (width >= 320) {
+                if (width >= 300) {
                     ellipsized = true
                     break
                 }
