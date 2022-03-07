@@ -178,7 +178,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         try {
             state = MERGING
 
-            val mergedDimensions = dimensions.map { dimension ->
+            val mergedDimensions = dimensions.associateWith { dimension ->
                 sendTitle("start merging '$dimension'...")
                 delay(1000)
                 val clientRegions = MergeWorker.merge(
@@ -188,8 +188,8 @@ class MergeExecutor(private val plugin: Entry): Executor() {
                     mode
                 ).toWorldAnvilFormat()
                 sendTitle("merging '$dimension' finished.")
-                dimension to clientRegions
-            }.toMap()
+                clientRegions
+            }
 
             mergedDimensions.forEach { (dimension, regions) ->
                 state = RELOADING_WORLDS
@@ -200,7 +200,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
                 state = APPLYING_LIGHTS
                 WorldLoader.updateLights(plugin, dimension)
             }
-        } catch(exception: CancellationException) {
+        } catch (exception: CancellationException) {
             state = RELOADING_WORLDS
             sendTitle("aborting merge operation...")
             return null

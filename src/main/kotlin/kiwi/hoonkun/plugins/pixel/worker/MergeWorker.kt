@@ -2,12 +2,14 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.commands.Executor
+import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
 
 import kotlinx.coroutines.delay
 
 import org.bukkit.ChatColor
+import kotlin.math.floor
 
 
 class MergeWorker {
@@ -17,15 +19,34 @@ class MergeWorker {
         private val g = ChatColor.GRAY
         private val w = ChatColor.WHITE
 
+        private val maxFreeTickets = mapOf(
+            "minecraft:meeting" to 32,
+            "minecraft:home" to 1,
+            "minecraft:armorer" to 1,
+            "minecraft:butcher" to 1,
+            "minecraft:cartographer" to 1,
+            "minecraft:cleric" to 1,
+            "minecraft:farmer" to 1,
+            "minecraft:fisherman" to 1,
+            "minecraft:fletcher" to 1,
+            "minecraft:leatherworker" to 1,
+            "minecraft:librarian" to 1,
+            "minecraft:mason" to 1,
+            "minecraft:shepherd" to 1,
+            "minecraft:toolsmith" to 1,
+            "minecraft:weaponsmith" to 1,
+        )
+
         suspend fun merge(from: WorldNBT, into: WorldNBT, ancestor: WorldNBT, mode: MergeMode): WorldNBT {
             val mergedChunk: MutableNBT<Chunk> = mutableMapOf()
-            val mergedEntity: MutableNBT<Entity> = mutableMapOf()
-            val mergedPoi: MutableNBT<Poi> = mutableMapOf()
+
+            Executor.sendTitle("merging chunks...")
 
             val (newChunk, existsChunk) =
                 from.chunk.entries.classificationByBoolean { !into.chunk.containsKey(it.key) }
 
-            newChunk.forEach { mergedChunk[it.key] = it.value }
+            newChunk.forEach { mergedChunk[it.key] = it.value.toMutableList() }
+
             existsChunk.map { it.key }.forEach { location ->
                 Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
@@ -57,7 +78,217 @@ class MergeWorker {
                 mergedChunk[location] = mergedChunks
             }
 
-            Executor.sendTitle("all regions merged")
+            Executor.sendTitle("merging entities...")
+
+            val allMergedEntities = mutableListOf<EntityEach>()
+
+            val fEntities = from.entity.values.flatten().map { it.entities }.flatten()
+            val iEntities = into.entity.values.flatten().map { it.entities }.flatten()
+            val oEntities = ancestor.entity.values.flatten().map { it.entities }.flatten()
+
+            println(fEntities.size)
+            println(iEntities.size)
+            println(oEntities.size)
+
+            val aEntities = setOf(
+                *fEntities.toTypedArray(),
+                *iEntities.toTypedArray(),
+                *oEntities.toTypedArray()
+            ).toList()
+
+            println(aEntities.size)
+
+            aEntities.forEachIndexed { index, entity ->
+                Executor.sendTitle("merging entities [$index/${aEntities.size}]")
+
+                val oHasE = oEntities.contains(entity)
+                val iHasE = iEntities.contains(entity)
+                val fHasE = fEntities.contains(entity)
+
+                val findE: (searchFrom: List<EntityEach>) -> EntityEach = { searchFrom ->
+                    searchFrom.find { entity.uuid.contentEquals(it.uuid) }!!
+                }
+
+                allMergedEntities.add(
+                    select(mode, iEntities, fEntities, oHasE, iHasE, fHasE, findE) ?: return@forEachIndexed
+                )
+            }
+
+            println(allMergedEntities.size)
+
+            Executor.sendTitle("classifying entities to regions...")
+
+            val villagers = allMergedEntities.filter { it.id == "minecraft:villager" }
+            val fVillagers = fEntities.filter { it.id == "minecraft:villager" }
+            val iVillagers = iEntities.filter { it.id == "minecraft:villager" }
+
+            val mergedMutableEntity: MutableNBT<MutableEntity> = mutableMapOf()
+
+            allMergedEntities.forEach { entityEach ->
+                val nbtLocation = NBTLocation(
+                    floor(entityEach.pos[0] / 16).toInt(),
+                    floor(entityEach.pos[2] / 16).toInt()
+                )
+
+                val anvilLocation = AnvilLocation(
+                    floor(nbtLocation.x / 32.0).toInt(),
+                    floor(nbtLocation.z / 32.0).toInt()
+                )
+
+                if (!mergedMutableEntity.containsKey(anvilLocation))
+                    mergedMutableEntity[anvilLocation] = mutableListOf()
+
+                var entity = mergedMutableEntity[anvilLocation]!!.find { it.location == nbtLocation }
+                if (entity == null) {
+                    val oldEntity = from.entity[anvilLocation]!!.find { it.location == nbtLocation }
+                        ?: into.entity[anvilLocation]!!.find { it.location == nbtLocation }
+                        ?: throw Exception("cannot find entity from 'into' and 'from'.")
+
+                    entity = MutableEntity(nbtLocation, oldEntity.timestamp, CompoundTag(mutableMapOf(), null))
+                        .apply {
+                            position = intArrayOf(nbtLocation.x, nbtLocation.z)
+                            dataVersion = oldEntity.dataVersion
+                            entities = mutableListOf()
+                        }
+                    mergedMutableEntity[anvilLocation]!!.add(entity)
+                }
+
+                entity.entities!!.add(entityEach)
+            }
+
+            val mergedEntity: NBT<Entity> = mergedMutableEntity.entries.associate {
+                it.key to it.value.map { mutableEntity -> mutableEntity.toEntity() }
+            }
+
+            Executor.sendTitle("merging poi...")
+
+            val fRecords = flattenRecords(from.poi)
+            val iRecords = flattenRecords(into.poi)
+            val oRecords = flattenRecords(ancestor.poi)
+
+            val aRecords = setOf(
+                *fRecords.toTypedArray(),
+                *iRecords.toTypedArray(),
+                *oRecords.toTypedArray()
+            ).toList()
+            
+            val allMergedRecords = mutableListOf<PoiRecord>()
+            
+            aRecords.forEachIndexed { index, record ->
+                Executor.sendTitle("merging poi records [$index/${aRecords.size}]")
+
+                val oHasR = oRecords.contains(record)
+                val iHasR = iRecords.contains(record)
+                val fHasR = fRecords.contains(record)
+
+                val findE: (searchFrom: List<PoiRecord>) -> PoiRecord = { searchFrom ->
+                    searchFrom.find { record.pos.contentEquals(it.pos) }!!
+                }
+
+                allMergedRecords.add(
+                    select(mode, iRecords, fRecords, oHasR, iHasR, fHasR, findE) ?: return@forEachIndexed
+                )
+            }
+
+            val jobSites = villagers.mapNotNull { it.brain?.memories?.jobSite }
+            val meetingPoints = villagers.mapNotNull { it.brain?.memories?.meetingPoint }
+            val homes = villagers.mapNotNull { it.brain?.memories?.home }
+
+            val poiBlocks = mutableListOf<EntityMemoryValue>()
+            poiBlocks.addAll(jobSites)
+            poiBlocks.addAll(meetingPoints)
+            poiBlocks.addAll(homes)
+
+            val findVillager: (PoiRecord, EntityEach) -> Boolean = { poiRecord, entityEach ->
+                if (poiRecord.type == "minecraft:home") {
+                    entityEach.brain?.memories?.home?.pos?.contentEquals(poiRecord.pos) == true
+                } else {
+                    entityEach.brain?.memories?.jobSite?.pos?.contentEquals(poiRecord.pos) == true
+                }
+            }
+
+            val resetMemory: (PoiRecord, EntityEach?) -> Unit = { poiRecord, entityEach ->
+                if (poiRecord.type == "minecraft:home") {
+                    entityEach?.brain?.memories?.home = null
+                } else {
+                    entityEach?.brain?.memories?.jobSite = null
+                }
+            }
+
+            allMergedRecords.forEachIndexed { index, poiRecord ->
+                Executor.sendTitle("applying free tickets of poi records [$index/${allMergedRecords.size}]")
+
+                if (!maxFreeTickets.keys.contains(poiRecord.type)) return@forEachIndexed
+
+                var newFreeTickets = (maxFreeTickets[poiRecord.type] ?: 0) - poiBlocks.count { it.pos.contentEquals(poiRecord.pos) }
+                if (poiRecord.type != "minecraft:meeting" && newFreeTickets < 0) {
+                    when (mode) {
+                        MergeMode.KEEP -> {
+                            resetMemory(poiRecord, fVillagers.find { findVillager(poiRecord, it) })
+                        }
+                        MergeMode.REPLACE -> {
+                            resetMemory(poiRecord, iVillagers.find { findVillager(poiRecord, it) })
+                        }
+                    }
+                    newFreeTickets = 0
+                } else if (poiRecord.type == "minecraft:meeting") {
+                    newFreeTickets = 32
+                    villagers.forEach { it.brain?.memories?.meetingPoint = null }
+                }
+                poiRecord.freeTickets = newFreeTickets
+            }
+
+            val mergedMutablePoi: MutableNBT<MutablePoi> = mutableMapOf()
+
+            allMergedRecords.forEachIndexed { index, record ->
+                Executor.sendTitle("classifying poi records [$index/${allMergedRecords.size}]")
+
+                val nbtLocation = NBTLocation(
+                    floor(record.pos[0] / 16.0).toInt(),
+                    floor(record.pos[2] / 16.0).toInt()
+                )
+
+                val anvilLocation = AnvilLocation(
+                    floor(nbtLocation.x / 32.0).toInt(),
+                    floor(nbtLocation.z / 32.0).toInt()
+                )
+
+                val sectionY = record.pos[1] / 16
+
+                if (!mergedMutablePoi.containsKey(anvilLocation))
+                    mergedMutablePoi[anvilLocation] = mutableListOf()
+
+                var poi = mergedMutablePoi[anvilLocation]!!.find { poi -> nbtLocation == poi.location }
+
+                if (poi == null) {
+                    val timestamp = from.poi[anvilLocation]!!.find { nbtLocation == it.location }?.timestamp
+                        ?: into.poi[anvilLocation]!!.find { nbtLocation == it.location }?.timestamp
+                        ?: throw Exception("cannot find poi in 'from' and 'into'.")
+
+                    poi = MutablePoi(nbtLocation, timestamp, CompoundTag(mutableMapOf(), null))
+                    mergedMutablePoi[anvilLocation]!!.add(poi)
+                }
+
+                if (poi.sections == null)
+                    poi.sections = mutableMapOf()
+
+                if (poi.dataVersion == null)
+                    poi.dataVersion = from.poi[anvilLocation]!!.find { nbtLocation == it.location }?.dataVersion
+                        ?: into.poi[anvilLocation]!!.find { nbtLocation == it.location }?.dataVersion
+                        ?: throw Exception("cannot find poi in 'from' and 'into'.")
+
+                poi.sections!![sectionY] = MutablePoiSection(CompoundTag(mutableMapOf(), sectionY.toString()))
+
+                poi.sections!![sectionY]!!.valid = 1
+                if (poi.sections!![sectionY]!!.records == null)
+                    poi.sections!![sectionY]!!.records = mutableListOf()
+
+                poi.sections!![sectionY]!!.records!!.add(record)
+            }
+
+            val mergedPoi: NBT<Poi> = mergedMutablePoi.entries.associate {
+                it.key to it.value.map { mutablePoi -> mutablePoi.toPoi() }
+            }
 
             return WorldNBT(mergedChunk, mergedEntity, mergedPoi)
         }
@@ -154,6 +385,44 @@ class MergeWorker {
             resultChunk.blockEntities = resultE
 
             return resultChunk
+        }
+
+        private fun <T> select(
+            mode: MergeMode,
+            into: List<T>,
+            from: List<T>,
+            oHas: Boolean,
+            iHas: Boolean,
+            fHas: Boolean,
+            findE: (searchFrom: List<T>) -> T
+        ): T? {
+            
+            if (oHas && iHas && !fHas) {
+                if (mode == MergeMode.KEEP) return findE(into)
+            } else if (oHas && !iHas && fHas) {
+                if (mode == MergeMode.REPLACE) return findE(from)
+            } else if (!oHas && iHas && !fHas) {
+                return findE(into)
+            } else if (!oHas && !iHas && fHas) {
+                return findE(from)
+            } else if (iHas) { // fHasE is always true, in this block.
+                return when (mode) {
+                    MergeMode.KEEP -> findE(into)
+                    MergeMode.REPLACE -> findE(from)
+                }
+            }
+
+            return null
+        }
+
+        private fun flattenRecords(poi: NBT<Poi>): List<PoiRecord> {
+            return poi.values.flatten()
+                .map { it.sections.values.toTypedArray() }
+                .toTypedArray()
+                .flatten()
+                .map { it.records.toTypedArray() }
+                .toTypedArray()
+                .flatten()
         }
 
         private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
