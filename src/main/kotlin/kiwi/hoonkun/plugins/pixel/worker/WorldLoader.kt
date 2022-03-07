@@ -94,7 +94,6 @@ class WorldLoader {
             val worldName = "${Entry.levelName}_$dimension"
 
             var worldLoaded = false
-            var lightUpdated = false
             var waitTime = 0L
 
             Executor.sendTitle("reloading world, this may take some time.")
@@ -108,12 +107,11 @@ class WorldLoader {
                         chunk.unload()
                         chunk.load()
                     }
-                    lightUpdated = true
                 }
             })
 
             val message = loadingMessages.shuffled()
-            while (!worldLoaded || !lightUpdated) {
+            while (!worldLoaded) {
                 delay(100)
                 if (worldLoaded) continue
 
@@ -125,11 +123,13 @@ class WorldLoader {
             Executor.sendTitle(" ")
         }
 
-        fun updateLights(plugin: Entry, dimension: String) {
+        suspend fun updateLights(plugin: Entry, dimension: String) {
             updateLights(plugin, getWorld(plugin, dimension))
         }
 
-        private fun updateLights(plugin: Entry, world: World) {
+        private suspend fun updateLights(plugin: Entry, world: World) {
+            var complete = false
+
             plugin.server.scheduler.runTask(plugin, Runnable {
                 lightSources.forEachIndexed { index, (x, y, z) ->
                     Executor.sendTitle("updating light sources [$index/${lightSources.size}]")
@@ -141,7 +141,11 @@ class WorldLoader {
                     blockState.update(true, true)
                 }
                 lightSources.clear()
+
+                complete = true
             })
+
+            while (!complete) { delay(100) }
         }
 
         fun movePlayersTo(plugin: Entry, dimension: String) {
