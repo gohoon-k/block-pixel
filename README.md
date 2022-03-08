@@ -102,7 +102,7 @@ Git 리셋을 진행합니다. 헤드의 위치를 n커밋 뒤로 옮기거나 �
 - ```/pixel tp <target> <dimension>```  
 플레이어를 지정한 월드의 동일한 좌표 위치로 텔레포트합니다.<sup>[[4]](#기존-Overworld-월드와-버전관리-Overworld-월드)</sup>
   - target : 텔레포트할 플레이어의 닉네임
-  - dimension : 도착 월드. dummy 혹은 overworld 중 하나.
+  - dimension : 도착 월드. dummy(기존의 Overworld(<b><i>level_name</i></b> 월드)) 혹은 overworld(버전관리가 진행되는 Overworld(<b><i>level_name</i>_overworld</b> 월드)) 중 하나.
   
 
 - ```/pixel whereis <target>```  
