@@ -92,7 +92,6 @@ data class BlockEntity(val nbt: CompoundTag) {
     val x = nbt["x"]!!.getAs<IntTag>().value
     val y = nbt["y"]!!.getAs<IntTag>().value
     val z = nbt["z"]!!.getAs<IntTag>().value
-    val id = nbt["id"]!!.getAs<StringTag>().value
 }
 
 class Poi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
