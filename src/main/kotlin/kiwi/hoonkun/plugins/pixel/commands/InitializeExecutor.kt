@@ -9,7 +9,7 @@ import java.io.File
 class InitializeExecutor: Executor() {
 
     companion object {
-        val FIRST_ARGS_LIST = mutableListOf("< force >")
+        val FIRST_ARGS_LIST = mutableListOf("[ force ]")
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {

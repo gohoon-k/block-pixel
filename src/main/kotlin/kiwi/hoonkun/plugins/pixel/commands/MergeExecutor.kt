@@ -22,7 +22,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         val FIRST_ARGS_LIST_WHEN_MERGING = mutableListOf("abort")
 
-        val SECOND_ARGS_LIST = mutableListOf("< branch_name >", "< commit_hash >")
+        val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >")
         val THIRD_ARGS_LIST = mutableListOf("keep", "replace")
 
         const val IDLE = -1

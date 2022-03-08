@@ -11,7 +11,7 @@ class ResetExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val SECOND_ARGS_LIST = mutableListOf("< steps >", "< commit_hash >")
+        val SECOND_ARGS_LIST = mutableListOf("< commit_hash | reset_steps >")
 
     }
 
