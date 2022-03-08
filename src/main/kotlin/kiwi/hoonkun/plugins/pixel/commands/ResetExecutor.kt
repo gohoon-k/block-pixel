@@ -11,7 +11,7 @@ class ResetExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<steps>", "<commit_hash>")
+        val SECOND_ARGS_LIST = mutableListOf("< steps >", "< commit_hash >")
 
     }
 
@@ -41,9 +41,9 @@ class ResetExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_DIMENSIONS
-            2 -> COMPLETE_LIST_0
-            else -> COMPLETE_LIST_EMPTY
+            1 -> ARGS_LIST_DIMENSIONS
+            2 -> SECOND_ARGS_LIST
+            else -> ARGS_LIST_EMPTY
         }
     }
 

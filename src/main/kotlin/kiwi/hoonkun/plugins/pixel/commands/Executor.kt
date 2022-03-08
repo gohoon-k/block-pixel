@@ -11,11 +11,11 @@ abstract class Executor {
 
     companion object {
 
-        val COMPLETE_LIST_EMPTY = mutableListOf<String>()
+        val ARGS_LIST_EMPTY = mutableListOf<String>()
 
-        val COMPLETE_LIST_DIMENSIONS = mutableListOf("all", "overworld", "nether", "the_end")
+        val ARGS_LIST_DIMENSIONS = mutableListOf("all", "overworld", "nether", "the_end")
 
-        val COMPLETE_LIST_COMMITTED = mutableListOf("<all_change_committed>")
+        val ARGS_LIST_COMMIT_CONFIRM = mutableListOf("< all_change_committed >")
 
         private var globalSender: CommandSender? = null
 

@@ -9,8 +9,8 @@ class BranchExecutor: Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "-d")
-        val COMPLETE_LIST_1 = mutableListOf("<branch_name>")
+        val FIRST_ARGS_LIST = mutableListOf("< new_name >", "-d")
+        val SECOND_ARGS_LIST = mutableListOf("< existing_name >")
 
     }
 
@@ -52,9 +52,9 @@ class BranchExecutor: Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_0
-            2 -> if (args[0] == "-d") COMPLETE_LIST_1 else COMPLETE_LIST_EMPTY
-            else -> COMPLETE_LIST_EMPTY
+            1 -> FIRST_ARGS_LIST
+            2 -> if (args[0] == "-d") SECOND_ARGS_LIST else ARGS_LIST_EMPTY
+            else -> ARGS_LIST_EMPTY
         }
     }
 

@@ -11,7 +11,7 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("<branch_name>", "<commit_hash>", "-recover")
+        val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >", "-recover")
 
     }
 
@@ -58,10 +58,10 @@ class CheckoutExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_DIMENSIONS
-            2 -> COMPLETE_LIST_0
-            3 -> if (args[1] != "-recover") COMPLETE_LIST_COMMITTED else COMPLETE_LIST_EMPTY
-            else -> COMPLETE_LIST_EMPTY
+            1 -> ARGS_LIST_DIMENSIONS
+            2 -> SECOND_ARGS_LIST
+            3 -> if (args[1] != "-recover") ARGS_LIST_COMMIT_CONFIRM else ARGS_LIST_EMPTY
+            else -> ARGS_LIST_EMPTY
         }
     }
 

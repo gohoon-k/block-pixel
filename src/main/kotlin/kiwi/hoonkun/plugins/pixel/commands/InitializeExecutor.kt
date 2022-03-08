@@ -9,7 +9,7 @@ import java.io.File
 class InitializeExecutor: Executor() {
 
     companion object {
-        val COMPLETE_LIST_1 = mutableListOf("force")
+        val FIRST_ARGS_LIST = mutableListOf("< force >")
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -37,8 +37,8 @@ class InitializeExecutor: Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when(args.size) {
-            1 -> COMPLETE_LIST_1
-            else -> COMPLETE_LIST_EMPTY
+            1 -> FIRST_ARGS_LIST
+            else -> ARGS_LIST_EMPTY
         }
     }
 

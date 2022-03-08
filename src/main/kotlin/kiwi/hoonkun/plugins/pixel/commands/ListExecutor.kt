@@ -14,8 +14,8 @@ class ListExecutor: Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_0 = mutableListOf("commits", "branches")
-        val COMPLETE_LIST_1_WHEN_COMMIT = mutableListOf("<page>")
+        val FIRST_ARGS_LIST = mutableListOf("commits", "branches")
+        val SECOND_ARGS_LIST = mutableListOf("< page >")
 
     }
 
@@ -98,9 +98,9 @@ class ListExecutor: Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_0
-            2 -> if (args[0] == "commits") COMPLETE_LIST_1_WHEN_COMMIT else COMPLETE_LIST_EMPTY
-            else -> COMPLETE_LIST_EMPTY
+            1 -> FIRST_ARGS_LIST
+            2 -> if (args[0] == "commits") SECOND_ARGS_LIST else ARGS_LIST_EMPTY
+            else -> ARGS_LIST_EMPTY
         }
     }
 

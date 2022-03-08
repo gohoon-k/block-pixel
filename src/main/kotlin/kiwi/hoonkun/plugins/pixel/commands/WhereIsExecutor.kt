@@ -23,7 +23,7 @@ class WhereIsExecutor(private val plugin: Entry): Executor() {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> plugin.server.onlinePlayers.map { it.name }.toMutableList()
-            else -> COMPLETE_LIST_EMPTY
+            else -> ARGS_LIST_EMPTY
         }
     }
 

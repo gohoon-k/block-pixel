@@ -20,8 +20,8 @@ class DiscardExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> COMPLETE_LIST_DIMENSIONS
-            else -> COMPLETE_LIST_EMPTY
+            1 -> ARGS_LIST_DIMENSIONS
+            else -> ARGS_LIST_EMPTY
         }
     }
 

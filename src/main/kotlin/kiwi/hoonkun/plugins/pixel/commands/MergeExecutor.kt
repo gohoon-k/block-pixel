@@ -20,10 +20,10 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST_WHEN_MERGING = mutableListOf("abort")
+        val FIRST_ARGS_LIST_WHEN_MERGING = mutableListOf("abort")
 
-        val COMPLETE_LIST_1 = mutableListOf("<branch>", "<commit_hash>")
-        val COMPLETE_LIST_3 = mutableListOf("keep", "replace")
+        val SECOND_ARGS_LIST = mutableListOf("< branch_name >", "< commit_hash >")
+        val THIRD_ARGS_LIST = mutableListOf("keep", "replace")
 
         const val IDLE = -1
 
@@ -108,14 +108,14 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         if (state > 0 && args.size == 1) {
-            return COMPLETE_LIST_WHEN_MERGING
+            return FIRST_ARGS_LIST_WHEN_MERGING
         }
         return when (args.size) {
-            1 -> COMPLETE_LIST_DIMENSIONS
-            2 -> COMPLETE_LIST_1
-            3 -> COMPLETE_LIST_3
-            4 -> COMPLETE_LIST_COMMITTED
-            else -> COMPLETE_LIST_EMPTY
+            1 -> ARGS_LIST_DIMENSIONS
+            2 -> SECOND_ARGS_LIST
+            3 -> THIRD_ARGS_LIST
+            4 -> ARGS_LIST_COMMIT_CONFIRM
+            else -> ARGS_LIST_EMPTY
         }
     }
 

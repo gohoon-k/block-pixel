@@ -11,7 +11,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
     companion object {
 
-        val COMPLETE_LIST = mutableListOf("<commit_message>")
+        val THIRD_ARGS_LIST = mutableListOf("< commit_message >")
 
     }
 
@@ -54,9 +54,9 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when {
-            args.size == 1 -> COMPLETE_LIST_DIMENSIONS
-            args.size > 1 -> COMPLETE_LIST
-            else -> COMPLETE_LIST_EMPTY
+            args.size == 1 -> ARGS_LIST_DIMENSIONS
+            args.size > 1 -> THIRD_ARGS_LIST
+            else -> ARGS_LIST_EMPTY
         }
     }
 

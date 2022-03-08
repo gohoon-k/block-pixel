@@ -7,7 +7,9 @@ import org.bukkit.command.CommandSender
 class TeleportExecutor(private val plugin: Entry): Executor() {
 
     companion object {
-        val COMPLETE_LIST_1 = mutableListOf("dummy", "overworld")
+
+        val SECOND_ARGS_LIST = mutableListOf("dummy", "overworld")
+
     }
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -38,8 +40,8 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> plugin.server.onlinePlayers.map { it.name }.toMutableList()
-            2 -> COMPLETE_LIST_1
-            else -> COMPLETE_LIST_EMPTY
+            2 -> SECOND_ARGS_LIST
+            else -> ARGS_LIST_EMPTY
         }
     }
 
