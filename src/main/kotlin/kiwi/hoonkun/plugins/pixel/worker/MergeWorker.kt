@@ -247,7 +247,7 @@ class MergeWorker {
                     floor(nbtLocation.z / 32.0).toInt()
                 )
 
-                val sectionY = record.pos[1] / 16
+                val sectionY = floor(record.pos[1] / 16.0).toInt()
 
                 if (!mergedMutablePoi.containsKey(anvilLocation))
                     mergedMutablePoi[anvilLocation] = mutableListOf()
