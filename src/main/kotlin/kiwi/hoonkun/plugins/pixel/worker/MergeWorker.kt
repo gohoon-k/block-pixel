@@ -271,9 +271,10 @@ class MergeWorker {
                         ?: into.poi[anvilLocation]!!.find { nbtLocation == it.location }?.dataVersion
                         ?: throw Exception("cannot find poi in 'from' and 'into'.")
 
-                poi.sections!![sectionY] = MutablePoiSection(CompoundTag(mutableMapOf(), sectionY.toString()))
+                if (poi.sections!![sectionY] == null)
+                    poi.sections!![sectionY] = MutablePoiSection(CompoundTag(mutableMapOf(), sectionY.toString()))
+                        .apply { valid = 1 }
 
-                poi.sections!![sectionY]!!.valid = 1
                 if (poi.sections!![sectionY]!!.records == null)
                     poi.sections!![sectionY]!!.records = mutableListOf()
 
