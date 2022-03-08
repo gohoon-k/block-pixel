@@ -149,6 +149,18 @@ data class PoiRecord(val nbt: CompoundTag) {
             nbt["free_tickets"] = IntTag(value, "free_tickets")
         }
     val type = nbt["type"]!!.getAs<StringTag>().value
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PoiRecord) return false
+
+        if (pos.contentEquals(other.pos)) return true
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return pos.contentHashCode()
+    }
 }
 
 class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
