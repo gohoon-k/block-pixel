@@ -29,6 +29,7 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
                 "dummy" -> target.teleport(Location(plugin.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
                 "overworld" -> target.teleport(Location(plugin.overworld, target.location.x, target.location.y, target.location.z))
             }
+            target.setGravity(true)
         })
 
         return CommandExecuteResult(true, "${g}successfully teleported '$w${args[0]}$g' to '$w$destination$g'")
