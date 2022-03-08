@@ -86,17 +86,11 @@ class MergeWorker {
             val iEntities = into.entity.values.flatten().map { it.entities }.flatten()
             val oEntities = ancestor.entity.values.flatten().map { it.entities }.flatten()
 
-            println(fEntities.size)
-            println(iEntities.size)
-            println(oEntities.size)
-
             val aEntities = setOf(
                 *fEntities.toTypedArray(),
                 *iEntities.toTypedArray(),
                 *oEntities.toTypedArray()
             ).toList()
-
-            println(aEntities.size)
 
             aEntities.forEachIndexed { index, entity ->
                 Executor.sendTitle("merging entities [$index/${aEntities.size}]")
@@ -113,8 +107,6 @@ class MergeWorker {
                     select(mode, iEntities, fEntities, oHasE, iHasE, fHasE, findE) ?: return@forEachIndexed
                 )
             }
-
-            println(allMergedEntities.size)
 
             Executor.sendTitle("classifying entities to regions...")
 
