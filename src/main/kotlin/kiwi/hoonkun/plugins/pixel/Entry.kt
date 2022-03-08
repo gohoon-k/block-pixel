@@ -44,7 +44,6 @@ class Entry: JavaPlugin() {
     )
 
     lateinit var void: World
-    lateinit var overworld: World
 
     private lateinit var job: CompletableJob
 
@@ -100,7 +99,7 @@ class Entry: JavaPlugin() {
             }
         }
 
-        overworld = server.createWorld(WorldCreator("${levelName}_overworld")) ?: throw Exception("cannot create overworld")
+        server.createWorld(WorldCreator("${levelName}_overworld")) ?: throw Exception("cannot create overworld")
 
         server.onlinePlayers.forEach {
             it.setGravity(true)

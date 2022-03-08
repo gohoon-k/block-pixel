@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.listener
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import org.bukkit.Location
+import kiwi.hoonkun.plugins.pixel.utils.LocationUtils
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerRespawnEvent
@@ -11,20 +11,26 @@ class PlayerSpawnListener(private val plugin: Entry): Listener {
 
     @EventHandler
     fun onPlayerSpawn(event: PlayerSpawnLocationEvent) {
-        val location = event.spawnLocation
-
-        if (location.world?.name != Entry.levelName) return
-
-        event.spawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
+        LocationUtils.applyLocation(
+            plugin,
+            event.player,
+            event.spawnLocation,
+            "world which you are trying to join is unloaded by pixel command, so you are joined to void world.\nplease wait until pixel command finishes."
+        ) {
+            event.spawnLocation = it
+        }
     }
 
     @EventHandler
     fun onPlayerRespawn(event: PlayerRespawnEvent) {
-        val location = event.respawnLocation
-
-        if (location.world?.name != Entry.levelName) return
-
-        event.respawnLocation = Location(plugin.overworld, location.x, location.y, location.z)
+        LocationUtils.applyLocation(
+            plugin,
+            event.player,
+            event.respawnLocation,
+            "world which you are trying to respawn is now unloaded by pixel command.\nplease wait until pixel command finishes."
+        ) {
+            event.respawnLocation = it
+        }
     }
 
 }
