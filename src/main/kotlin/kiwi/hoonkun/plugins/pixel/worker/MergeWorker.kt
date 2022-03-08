@@ -194,15 +194,17 @@ class MergeWorker {
             val findVillager: (PoiRecord, EntityEach) -> Boolean = { poiRecord, entityEach ->
                 if (poiRecord.type == "minecraft:home") {
                     entityEach.brain?.memories?.home?.pos?.contentEquals(poiRecord.pos) == true
-                } else {
+                } else if (maxFreeTickets.containsKey(poiRecord.type)) {
                     entityEach.brain?.memories?.jobSite?.pos?.contentEquals(poiRecord.pos) == true
+                } else {
+                    false
                 }
             }
 
             val resetMemory: (PoiRecord, EntityEach?) -> Unit = { poiRecord, entityEach ->
                 if (poiRecord.type == "minecraft:home") {
                     entityEach?.brain?.memories?.home = null
-                } else {
+                } else if (maxFreeTickets.containsKey(poiRecord.type)) {
                     entityEach?.brain?.memories?.jobSite = null
                 }
             }
@@ -213,7 +215,7 @@ class MergeWorker {
                 if (!maxFreeTickets.keys.contains(poiRecord.type)) return@forEachIndexed
 
                 var newFreeTickets = (maxFreeTickets[poiRecord.type] ?: 0) - poiBlocks.count { it.pos.contentEquals(poiRecord.pos) }
-                if (poiRecord.type != "minecraft:meeting" && newFreeTickets < 0) {
+                if (poiRecord.type != "minecraft:meeting" && maxFreeTickets.containsKey(poiRecord.type) && newFreeTickets < 0) {
                     when (mode) {
                         MergeMode.KEEP -> {
                             resetMemory(poiRecord, fVillagers.find { findVillager(poiRecord, it) })
