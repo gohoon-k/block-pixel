@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import org.bukkit.*
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
+import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.plugin.java.JavaPlugin
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -49,6 +50,8 @@ class Entry: JavaPlugin() {
 
     private var scopeRunning = false
 
+    private lateinit var managers: Set<String>
+
     override fun onEnable() {
         super.onEnable()
 
@@ -61,6 +64,12 @@ class Entry: JavaPlugin() {
         logFolder = File("$dataFolderPath/logs")
         versionedFolder = File("$dataFolderPath/versioned")
         clientFolder = File(dataFolderPath).parentFile.parentFile
+
+        val managerFile = File("$dataFolder/pixel.managers")
+        if (!managerFile.exists())
+            managerFile.createNewFile()
+
+        managers = String(managerFile.readBytes()).split("\n").toSet()
 
         val properties = String(File("${clientFolder.absolutePath}/server.properties").readBytes())
         levelName = properties.split("\n")
@@ -131,8 +140,24 @@ class Entry: JavaPlugin() {
 
         if (args.isEmpty()) {
             sender.sendMessage("pixel.minecraft-git main command.")
-            sender.sendMessage("type '/pixel help' to print some useful messages.")
             return false
+        }
+
+        if (args[0] == "allow" || args[0] == "deny") {
+            if (sender !is ConsoleCommandSender) {
+                sender.sendMessage(ChatColor.RED + "unknown command '${args[0]}'")
+            } else if (args.size == 1) {
+                sender.sendMessage("you have to specify who to ${args[0]} pixel commands.")
+            } else {
+                if (args[0] == "allow") allowPlayerAsManager(args[1])
+                else denyPlayerAsManager(args[1])
+            }
+            return true
+        }
+
+        if (!managers.contains(sender.name)) {
+            sender.sendMessage("you don't have permissions to run this command.")
+            return true
         }
 
         val remainingArgs = args.slice(1 until args.size)
@@ -221,6 +246,28 @@ class Entry: JavaPlugin() {
         } else {
             executors[args[0]]?.autoComplete(remainingArgs)
         }
+    }
+
+    private fun allowPlayerAsManager(playerName: String) {
+        managers = managers.toMutableSet().apply {
+            remove("")
+            add(playerName)
+        }.toSet()
+        saveManagerFile()
+        server.logger.log(Level.INFO, "allowed $playerName as pixel manager")
+    }
+
+    private fun denyPlayerAsManager(playerName: String) {
+        managers = managers.toMutableSet().apply {
+            remove("")
+            remove(playerName)
+        }.toSet()
+        saveManagerFile()
+        server.logger.log(Level.INFO, "denied $playerName from pixel manager")
+    }
+
+    private fun saveManagerFile() {
+        File("$dataFolder/pixel.managers").writeBytes(managers.joinToString("\n").toByteArray())
     }
 
     operator fun ChatColor.plus(other: String): String = "" + this + other
