@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 
@@ -29,7 +30,12 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
         plugin.server.scheduler.runTask(plugin, Runnable {
             when (destination) {
                 "dummy" -> target.teleport(Location(plugin.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
-                "overworld" -> target.teleport(Location(plugin.overworld, target.location.x, target.location.y, target.location.z))
+                "overworld" -> {
+                    plugin.server.getWorld("${Entry.levelName}_overworld").also {
+                        if (it == null) sender?.sendMessage("${ChatColor.RED}overworld is unloaded by pixel command now.\nplease wait until pixel command finishes.")
+                        else target.teleport(Location(it, target.location.x, target.location.y, target.location.z))
+                    }
+                }
             }
             target.setGravity(true)
         })
