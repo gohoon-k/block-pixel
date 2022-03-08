@@ -13,6 +13,7 @@ Git 과 비슷한 명령으로 마인크래프트 지형 및 건축물, 엔티�
 &nbsp;&nbsp;&nbsp;&nbsp;[일관성](#일관성)  
 &nbsp;&nbsp;&nbsp;&nbsp;[병합](#병합)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[병합의 중단](#병합의-중단)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[병합의 원복](#병합의-원복)  
 &nbsp;&nbsp;&nbsp;&nbsp;[기존 Overworld 월드와 버전관리 Overworld 월드](#기존-Overworld-월드와-버전관리-Overworld-월드)  
 [주의사항](#주의사항)  
 &nbsp;&nbsp;&nbsp;&nbsp;[저장소 초기화](#저장소-초기화)  
