@@ -19,7 +19,7 @@ class MergeWorkerTest: StringSpec() {
         val testAnvilFiles = arrayOf(regionFile)
 
         "convert between region and client region" {
-            val regions1 = testAnvilFiles.read().toNBT { timestamp, nbt -> Chunk(timestamp, nbt) }
+            val regions1 = testAnvilFiles.read().toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }
 
             val version1 = getDataVersion(regions1)
 
@@ -29,7 +29,7 @@ class MergeWorkerTest: StringSpec() {
 
             clientRegions[testRegionLocation]!!.size % 4096 shouldBe 0
 
-            val regions2 = clientRegions.toNBT { timestamp, nbt -> Chunk(timestamp, nbt) }
+            val regions2 = clientRegions.toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }
 
             val version2 = getDataVersion(regions2)
 

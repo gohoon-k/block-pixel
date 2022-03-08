@@ -23,7 +23,7 @@ class PaletteWorkerTest: StringSpec() {
         val regionFile = File(uri)
         val testAnvilFiles = arrayOf(regionFile)
 
-        val chunks = testAnvilFiles.read().toNBT { timestamp, nbt -> Chunk(timestamp, nbt) }[testRegionLocation]!!
+        val chunks = testAnvilFiles.read().toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }[testRegionLocation]!!
 
         "unpack and pack block_states.data" {
 
