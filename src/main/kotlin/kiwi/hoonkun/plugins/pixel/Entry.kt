@@ -87,6 +87,9 @@ class Entry: JavaPlugin() {
                 .createWorld() ?: throw Exception("cannot create void world")
         }
 
+        void.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false)
+        void.time = 13000L
+
         val overworldFolder = File("${clientFolder.absolutePath}/${levelName}_overworld")
         if (!overworldFolder.exists()) {
             overworldFolder.mkdirs()
