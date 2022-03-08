@@ -96,8 +96,6 @@ class WorldLoader {
             var worldLoaded = false
             var waitTime = 0L
 
-            Executor.sendTitle("reloading world, this may take some time.")
-
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.createWorld(WorldCreator(worldName))!!.also { created ->
                     worldLoaded = true
@@ -110,15 +108,18 @@ class WorldLoader {
                 }
             })
 
+            var messageIndex = 0
             val message = loadingMessages.shuffled()
             while (!worldLoaded) {
-                delay(100)
+                delay(200)
                 if (worldLoaded) continue
 
                 waitTime += 100
-                if (waitTime % 5000L == 0L && (waitTime / 5000).toInt() - 1 < message.size) {
-                    Executor.sendTitle(message[(waitTime / 5000).toInt() - 1])
+                if (waitTime % 5000L == 0L && messageIndex < message.size * 2) {
+                    messageIndex++
                 }
+                if (messageIndex % 2 == 0) Executor.sendTitle("loading '$dimension' world, this may take some time.")
+                else Executor.sendTitle(message[messageIndex / 2])
             }
             Executor.sendTitle(" ")
         }
