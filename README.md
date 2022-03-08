@@ -19,7 +19,7 @@ Git 과 비슷한 명령으로 마인크래프트 지형 및 건축물, 엔티�
 &nbsp;&nbsp;&nbsp;&nbsp;[저장소 초기화](#저장소-초기화)  
 &nbsp;&nbsp;&nbsp;&nbsp;[detached HEAD](#detached-head)  
 &nbsp;&nbsp;&nbsp;&nbsp;[커밋 확인 인수](#커밋-확인-인수)  
-&nbsp;&nbsp;&nbsp;&nbsp;[Reset과 Recover, Discard](#reset-recover-discard)  
+&nbsp;&nbsp;&nbsp;&nbsp;[Reset과 Recover, Discard](#reset과-recover-discard)  
 [TL;DR](#tldr)
 
 ## 서버에 추가
@@ -78,7 +78,7 @@ Git 리셋을 진행합니다. 헤드의 위치를 n커밋 뒤로 옮기거나 �
   
 
 - ```/pixel checkout <dimension> -recover```  
-버전관리 데이터가 꼬였을 것으로 예상되는 경우, 마지막 커밋 상태로 버전관리 데이터를 clean 할 수 있습니다.<sup>[[6]](#reset-recover-discard)</sup><sup>[[7]](#일관성)</sup>
+버전관리 데이터가 꼬였을 것으로 예상되는 경우, 마지막 커밋 상태로 버전관리 데이터를 clean 할 수 있습니다.<sup>[[6]](#reset과-recover-discard)</sup><sup>[[7]](#일관성)</sup>
   
 
 - ```/pixel merge <dimension> <branch|commit_hash> <merge_mode> <commit_confirm>```  
@@ -128,7 +128,7 @@ Git 리셋을 진행합니다. 헤드의 위치를 n커밋 뒤로 옮기거나 �
 따라서 체크아웃, 병합 등의 버전관리 데이터를 실제 월드에 반영하는 커맨드를 수행 중 예외가 발생할 경우 버전관리 폴더에는 반영된 데이터가 실제 월드에는 반영되지 않았을 가능성이 있습니다.  
 이런 경우가 의심될 경우, `/pixel checkout <dimension> -recover` 커맨드를 사용하면 버전관리 데이터를 마지막 커밋의 상태로 복구할 수 있습니다.  
   
-반대로, 실제 월드의 데이터를 버전관리 데이터에 맞추고 싶다면 `/pixel discard <dimension>`<sup>[[6]](#reset-recover-discard)</sup> 을 수행합니다.  
+반대로, 실제 월드의 데이터를 버전관리 데이터에 맞추고 싶다면 `/pixel discard <dimension>`<sup>[[6]](#reset과-recover-discard)</sup> 을 수행합니다.  
 
 나머지 사항은 Git 의 그것과 최대한 비슷하도록 구성했습니다.
 
