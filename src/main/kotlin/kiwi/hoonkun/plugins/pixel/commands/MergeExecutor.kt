@@ -22,6 +22,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
         val FIRST_ARGS_LIST_WHEN_MERGING = mutableListOf("abort")
 
+        val FIRST_ARGS_LIST = mutableListOf("overworld", "nether", "the_end")
         val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >")
         val THIRD_ARGS_LIST = mutableListOf("keep", "replace")
 
@@ -53,6 +54,9 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")
             return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before merge.")
+
+        if (args[0] == "all")
+            return CommandExecuteResult(false, "you cannot merge all dimensions at once. please use single world argument.")
 
         try {
             val dimensions = dimensions(args[0])
@@ -111,7 +115,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             return FIRST_ARGS_LIST_WHEN_MERGING
         }
         return when (args.size) {
-            1 -> ARGS_LIST_DIMENSIONS
+            1 -> FIRST_ARGS_LIST
             2 -> SECOND_ARGS_LIST
             3 -> THIRD_ARGS_LIST
             4 -> ARGS_LIST_COMMIT_CONFIRM
@@ -235,7 +239,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         return "${g}committed successful merge of $message"
     }
 
-    open class MergeException(val m: String): Exception(m)
+    open class MergeException(m: String): Exception(m)
 
     class UnknownSourceException(source: String): MergeException("merge failed, unknown source with given name '$source'")
 
