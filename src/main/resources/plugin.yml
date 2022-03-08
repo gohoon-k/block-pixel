@@ -1,5 +1,5 @@
 name: pixel
-version: '${project.version}'
+version: 22.1.0
 main: kiwi.hoonkun.plugins.pixel.Entry
 api-version: 1.18
 authors: [ hoon_kiwicraft ]
