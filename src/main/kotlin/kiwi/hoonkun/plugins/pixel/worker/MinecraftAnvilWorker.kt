@@ -79,7 +79,7 @@ class MinecraftAnvilWorker {
             )
         }
 
-        private fun <T: NBTData> NBT<T>.toAnvilFormat(): AnvilFormat {
+        fun <T: NBTData> NBT<T>.toAnvilFormat(): AnvilFormat {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             entries.forEach { (anvilLocation, dataList) ->
