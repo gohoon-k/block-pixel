@@ -3,7 +3,7 @@ package kiwi.hoonkun.plugins.pixel.worker
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
 
 import java.io.File
 
@@ -26,36 +26,36 @@ class IOWorker {
 
         fun repositoryWorldNBTs(
             dimensions: List<String>
-        ): WorldNBTs {
-            return dimensions.associateWith { WorldNBT(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
+        ): Map<String, WorldAnvil> {
+            return dimensions.associateWith { WorldAnvil(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
         }
 
-        private inline fun <T: NBTData> repositoryNBT(
+        private inline fun <T: ChunkData> repositoryNBT(
             anvilType: AnvilType,
             dimension: String,
-            generator: (NBTLocation, Int, CompoundTag) -> T
-        ): NBT<T> {
+            generator: (ChunkLocation, Int, CompoundTag) -> T
+        ): Anvil<T> {
             val dimensionPath = getVersionedPath(anvilType, dimension)
             val anvilFiles = File(dimensionPath).listFiles()
 
-            return anvilFiles?.read()?.toNBT(generator) ?: mapOf()
+            return anvilFiles?.read()?.toAnvil(generator) ?: mapOf()
         }
 
-        private fun repositoryChunk(dimension: String): NBT<Chunk> {
+        private fun repositoryChunk(dimension: String): Anvil<Terrain> {
             return repositoryNBT(
-                AnvilType.CHUNK,
+                AnvilType.TERRAIN,
                 dimension
-            ) { _, timestamp, nbt -> Chunk(timestamp, nbt) }
+            ) { _, timestamp, nbt -> Terrain(timestamp, nbt) }
         }
 
-        private fun repositoryPoi(dimension: String): NBT<Poi> {
+        private fun repositoryPoi(dimension: String): Anvil<Poi> {
             return repositoryNBT(
                 AnvilType.POI,
                 dimension
             ) { location, timestamp, nbt -> Poi(location, timestamp, nbt) }
         }
 
-        private fun repositoryEntity(dimension: String): NBT<Entity> {
+        private fun repositoryEntity(dimension: String): Anvil<Entity> {
             return repositoryNBT(
                 AnvilType.ENTITY,
                 dimension

@@ -3,37 +3,47 @@ package kiwi.hoonkun.plugins.pixel
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 
-data class AnvilLocation(val x: Int, val z: Int)
-
+/** 월드 하나의 모든 ByteArray 타입의 MinecraftAnvil 파일 데이터를 포함하는 데이터 구조 */
 typealias WorldAnvilFormat = Map<AnvilType, AnvilFormat>
+/** AnvilType 하나의 모든 ByteArray MinecraftAnvil 파일 데이터를 포함하는 데이터 구조 */
 typealias AnvilFormat = Map<AnvilLocation, ByteArray>
 
-data class NBTLocation(val x: Int, val z: Int)
+/** 변경 불가능한, AnvilType(T) 하나의 MinecraftAnvil NBT 데이터를 포함하는 데이터 구조 */
+typealias Anvil<T/* :ChunkData */> = Map<AnvilLocation, List<T>>
+/** 변경 가능한, AnvilType(T) 하나의 MinecraftAnvil NBT 데이터를 포함하는 데이터 구조 */
+typealias MutableAnvil<T/* :ChunkData */> = MutableMap<AnvilLocation, MutableList<T>>
 
-typealias NBT<T/* :NBTData */> = Map<AnvilLocation, List<T>>
-typealias MutableNBT<T/* :NBTData */> = MutableMap<AnvilLocation, MutableList<T>>
-
-typealias WorldNBTs = Map<String, WorldNBT>
-
-data class WorldNBT(
-    val chunk: NBT<Chunk>,
-    val entity: NBT<Entity>,
-    val poi: NBT<Poi>
-)
-
+/** Packed 된 블럭 데이터 */
 typealias PackedBlocks = LongArray
+/** unpacked 된 블럭 데이터. 일반적으로 그 길이는 4096이다. */
 typealias Blocks = List<Int>
 
+/** Anvil 의 위치. 파일이름에 포함되는 그것이다. 예를 들어 r.-1.0.mca 일 경우 x는 -1, z는 0이 된다. */
+data class AnvilLocation(val x: Int, val z: Int)
+/** Chunk 의 위치. Anvil 에 상대적이지 않은 청크 좌표계의 절대 위치이다. */
+data class ChunkLocation(val x: Int, val z: Int)
+
+/** 버전관리가 진행되는 Anvil 의 타입들 */
 enum class AnvilType(val path: String) {
-    CHUNK("region"), POI("poi"), ENTITY("entities")
+    TERRAIN("region"), POI("poi"), ENTITY("entities")
 }
 
-abstract class NBTData(val timestamp: Int, val nbt: CompoundTag) {
-    abstract val location: NBTLocation
+/** 월드 하나의 모든 MinecraftAnvil NBT 데이터를 포함하는 데이터 구조 */
+data class WorldAnvil(
+    val terrain: Anvil<Terrain>,
+    val entity: Anvil<Entity>,
+    val poi: Anvil<Poi>
+)
+
+/** Anvil 파일 하나를 구성하는 여러 종류의 Chunk 데이터를 아우르는 추상 클래스.
+ *  이 클래스 인스턴스 하나는 Anvil 파일 하나를 구성하는 단 한 종류의 데이터들 중 하나를 지칭한다. */
+abstract class ChunkData(val timestamp: Int, val nbt: CompoundTag) {
+    abstract val location: ChunkLocation
 }
 
-class Chunk(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
-    override val location = NBTLocation(xPos, zPos)
+/** Terrain 타입의 Anvil 파일을 구성하는 Chunk 데이터를 갖는 데이터 구조 */
+class Terrain(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
+    override val location = ChunkLocation(xPos, zPos)
 
     private val xPos get() = nbt["xPos"]!!.getAs<IntTag>().value
     private val zPos get() = nbt["zPos"]!!.getAs<IntTag>().value
@@ -94,7 +104,8 @@ data class BlockEntity(val nbt: CompoundTag) {
     val z = nbt["z"]!!.getAs<IntTag>().value
 }
 
-class Poi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+/** Poi 타입의 Anvil 파일을 구성하는 Chunk 데이터를 갖는 데이터 구조 */
+class Poi(override val location: ChunkLocation, timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var sections: Map<Int, PoiSection>
         get() = nbt["Sections"]!!.getAs<CompoundTag>().value.entries.associate { (k, v) -> k.toInt() to PoiSection(v.getAs()) }
         set(value) {
@@ -107,7 +118,7 @@ class Poi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag):
         }
 }
 
-class MutablePoi(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+class MutablePoi(override val location: ChunkLocation, timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var sections: MutableMap<Int, MutablePoiSection>? = null
     var dataVersion: Int? = null
 
@@ -162,7 +173,8 @@ data class PoiRecord(val nbt: CompoundTag) {
     }
 }
 
-class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+/** Entity 타입의 Anvil 파일을 구성하는 Chunk 데이터를 갖는 데이터 구조 */
+class Entity(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var position: IntArray
         get() = nbt["Position"]!!.getAs<IntArrayTag>().value
         set(value) {
@@ -172,7 +184,7 @@ class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
     private val xPos get() = position[0]
     private val zPos get() = position[1]
 
-    override val location: NBTLocation get() = NBTLocation(xPos, zPos)
+    override val location: ChunkLocation get() = ChunkLocation(xPos, zPos)
 
     var entities: List<EntityEach>
         get() = nbt["Entities"]!!.getAs<ListTag>().value.map { EntityEach(it.getAs()) }
@@ -187,7 +199,7 @@ class Entity(timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
         }
 }
 
-class MutableEntity(override val location: NBTLocation, timestamp: Int, nbt: CompoundTag): NBTData(timestamp, nbt) {
+class MutableEntity(override val location: ChunkLocation, timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var position: IntArray? = intArrayOf(location.x, location.z)
 
     var entities: MutableList<EntityEach>? = null
@@ -266,6 +278,6 @@ data class EntityMemoryValue(private val nbt: CompoundTag) {
     }
 }
 
-fun List<Chunk>.findChunk(x: Int, z: Int): Chunk? = find {
+fun List<Terrain>.findChunk(x: Int, z: Int): Terrain? = find {
     it.nbt.value["xPos"]!!.getAs<IntTag>().value == x && it.nbt["zPos"]!!.getAs<IntTag>().value == z
 }

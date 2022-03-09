@@ -45,7 +45,7 @@ class MinecraftAnvilWorker {
             return result
         }
 
-        inline fun <T: NBTData> AnvilFormat.toNBT(generator: (NBTLocation, Int, CompoundTag) -> T): NBT<T> {
+        inline fun <T: ChunkData> AnvilFormat.toAnvil(generator: (ChunkLocation, Int, CompoundTag) -> T): Anvil<T> {
             val result = mutableMapOf<AnvilLocation, List<T>>()
 
             entries.forEach { (anvilLocation, bytes) ->
@@ -60,7 +60,7 @@ class MinecraftAnvilWorker {
 
                     val (timestamp, buffer) = decompress(bytes, i) ?: continue
 
-                    parts.add(generator.invoke(NBTLocation(x, z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
+                    parts.add(generator.invoke(ChunkLocation(x, z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
                 }
 
                 result[anvilLocation] = parts
@@ -71,15 +71,15 @@ class MinecraftAnvilWorker {
             return result
         }
 
-        fun WorldNBT.toWorldAnvilFormat(): WorldAnvilFormat {
+        fun WorldAnvil.toWorldAnvilFormat(): WorldAnvilFormat {
             return mapOf(
-                AnvilType.CHUNK to chunk.toAnvilFormat(),
+                AnvilType.TERRAIN to terrain.toAnvilFormat(),
                 AnvilType.ENTITY to entity.toAnvilFormat(),
                 AnvilType.POI to poi.toAnvilFormat()
             )
         }
 
-        fun <T: NBTData> NBT<T>.toAnvilFormat(): AnvilFormat {
+        fun <T: ChunkData> Anvil<T>.toAnvilFormat(): AnvilFormat {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             entries.forEach { (anvilLocation, dataList) ->

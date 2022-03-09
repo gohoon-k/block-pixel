@@ -5,7 +5,7 @@ import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.nbt.tag.IntTag
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
 import java.io.File
 
 class MergeWorkerTest: StringSpec() {
@@ -19,7 +19,7 @@ class MergeWorkerTest: StringSpec() {
         val testAnvilFiles = arrayOf(regionFile)
 
         "convert between region and client region" {
-            val regions1 = testAnvilFiles.read().toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }
+            val regions1 = testAnvilFiles.read().toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }
 
             val version1 = getDataVersion(regions1)
 
@@ -29,7 +29,7 @@ class MergeWorkerTest: StringSpec() {
 
             clientRegions[testRegionLocation]!!.size % 4096 shouldBe 0
 
-            val regions2 = clientRegions.toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }
+            val regions2 = clientRegions.toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }
 
             val version2 = getDataVersion(regions2)
 
@@ -40,7 +40,7 @@ class MergeWorkerTest: StringSpec() {
 
     }
 
-    private fun getDataVersion(from: NBT<Chunk>): Int {
+    private fun getDataVersion(from: Anvil<Terrain>): Int {
         return from[AnvilLocation(0, 0)]!!
             .findChunk(0, 0)!!
             .nbt["DataVersion"]!!.getAs<IntTag>().value

@@ -2,12 +2,12 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 
 import kiwi.hoonkun.plugins.pixel.AnvilLocation
-import kiwi.hoonkun.plugins.pixel.Chunk
+import kiwi.hoonkun.plugins.pixel.Terrain
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.ListTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toNBT
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
 
@@ -23,7 +23,7 @@ class PaletteWorkerTest: StringSpec() {
         val regionFile = File(uri)
         val testAnvilFiles = arrayOf(regionFile)
 
-        val chunks = testAnvilFiles.read().toNBT { _, timestamp, nbt -> Chunk(timestamp, nbt) }[testRegionLocation]!!
+        val chunks = testAnvilFiles.read().toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }[testRegionLocation]!!
 
         "unpack and pack block_states.data" {
 
