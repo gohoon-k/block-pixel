@@ -176,9 +176,14 @@
 ## 이 플러그인에 대해 더 알아보기
 위의 문서는 최대한 간략화된 문서입니다.  
 전체 작동 방식 및 기술적인 사항을 확인하고 싶으시면 아래 문서들을 확인해보세요!  
-- [Git과 전체적인 작동 방식](/docs/MECHANISM.md)
-  - [어째서 버전관리 월드를 따로 만들었는가?](/docs/DUMMY_WORLD.md)
-  - [왜 플레이어 데이터는 버전관리하지 않는가?](/docs/PLAYER_DATA.md)
-- [보다 고급진 사용](/docs/ADVANCED_USAGE.md)
-  - [평행세계와 시간여행](/docs/BRANCH_AND_CHECKOUT.md)
-  - [월드의 병합에 대해](/docs/MERGING_WORLDS.md)
+  
+기술적인 사항  
+&nbsp;&nbsp;&nbsp;&nbsp;[Git과 전체적인 작동 방식](/docs/MECHANISM.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[어째서 버전관리 월드를 따로 만들었는가?](/docs/DUMMY_WORLD.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[왜 플레이어 데이터는 버전관리하지 않는가?](/docs/PLAYER_DATA.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[광원 반영 방식](/docs/LIGHT_SOURCES.md)  
+  
+더 많은 기능  
+&nbsp;&nbsp;&nbsp;&nbsp;[보다 고급진 사용](/docs/ADVANCED_USAGE.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[평행세계와 시간여행](/docs/BRANCH_AND_CHECKOUT.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[월드의 병합에 대해](/docs/MERGING_WORLDS.md)  
