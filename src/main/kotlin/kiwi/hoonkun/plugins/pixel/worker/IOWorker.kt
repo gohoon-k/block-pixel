@@ -38,8 +38,8 @@ class IOWorker {
             world: String,
             generator: (ChunkLocation, Int, CompoundTag) -> T
         ): Anvil<T> {
-            val dimensionPath = getVersionedPath(anvilType, world)
-            val anvilFiles = File(dimensionPath).listFiles()
+            val worldPath = getVersionedPath(anvilType, world)
+            val anvilFiles = File(worldPath).listFiles()
 
             return anvilFiles?.read()?.toAnvil(generator) ?: mapOf()
         }
@@ -81,8 +81,8 @@ class IOWorker {
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            worlds.forEach { dimension ->
-                copyAnvilFiles(plugin, dimension,false, needsUnload, needsLoad)
+            worlds.forEach { world ->
+                copyAnvilFiles(plugin, world,false, needsUnload, needsLoad)
             }
         }
 
@@ -92,8 +92,8 @@ class IOWorker {
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            worlds.forEach { dimension ->
-                copyAnvilFiles(plugin, dimension, true, needsUnload, needsLoad)
+            worlds.forEach { world ->
+                copyAnvilFiles(plugin, world, true, needsUnload, needsLoad)
             }
         }
 
@@ -120,7 +120,7 @@ class IOWorker {
                 if (!fromDirectory.exists()) fromDirectory.mkdirs()
                 if (!toDirectory.exists()) toDirectory.mkdirs()
 
-                val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find directory of anvils with dimension '$world'")
+                val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find directory of anvils with world '$world'")
                 fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
 
             }
