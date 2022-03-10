@@ -181,9 +181,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Git과 전체적인 작동 방식](/docs/MECHANISM.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;[어째서 버전관리 월드를 따로 만들었는가?](/docs/DUMMY_WORLD.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;[왜 플레이어 데이터는 버전관리하지 않는가?](/docs/PLAYER_DATA.md)  
-&nbsp;&nbsp;&nbsp;&nbsp;[광원 반영 방식](/docs/LIGHT_SOURCES.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;[병합 시의 광원으로부터의 빛 반영 방식](/docs/LIGHT_SOURCES.md)  
   
 더 많은 기능  
-&nbsp;&nbsp;&nbsp;&nbsp;[보다 고급진 사용](/docs/ADVANCED_USAGE.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;[평행세계와 시간여행](/docs/BRANCH_AND_CHECKOUT.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;[월드의 병합에 대해](/docs/MERGING_WORLDS.md)  
