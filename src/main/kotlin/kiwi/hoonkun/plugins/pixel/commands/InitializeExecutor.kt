@@ -1,43 +1,65 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
 
-class InitializeExecutor: Executor() {
+class InitializeExecutor(parent: Entry): Executor(parent) {
 
     companion object {
-        val FIRST_ARGS_LIST = mutableListOf("[ force ]")
+        val SECOND_ARGS_LIST = mutableListOf("[ force ]")
     }
+
+    override val usage: String = "init < target_world > [ force ]"
+    override val description: String = "initializes new repository of given world"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         if (!Entry.versionedFolder.exists()) Entry.versionedFolder.mkdirs()
 
-        val gitDir = File("${Entry.versionedFolder.absolutePath}/.git")
-        if (gitDir.exists() && args.isEmpty()) {
-            return CommandExecuteResult(
-                false,
-                "local repository already exists! if you want to delete and recreate local repository, add 'force' argument."
-            )
-        } else if (gitDir.exists() && args[0] == "force") {
-            gitDir.deleteRecursively()
-        } else if (gitDir.exists()) {
-            return CommandExecuteResult(false, "invalid argument '${args[0]}'")
+        val world = args[0]
+
+        if (!isValidWorld(world) && world != "all")
+            return createUnknownWorldResult(world)
+
+        val targets = worldsWithAll(args[0], false).toMutableList()
+        val skipped = mutableListOf<String>()
+
+        targets.forEach {
+
+            val gitDir = File("${Entry.versionedFolder.absolutePath}/$it/.git")
+            if (gitDir.exists() && args.size == 1) {
+                skipped.add(it)
+                return@forEach
+            } else if (gitDir.exists() && args[1] == "true") {
+                gitDir.deleteRecursively()
+            } else if (gitDir.exists()) {
+                return CommandExecuteResult(false, "invalid <force> argument '${args[0]}'")
+            }
+
+            val repository = FileRepositoryBuilder.create(gitDir)
+            repository.create()
+
+            parent.repositories[it] = repository
+
         }
 
-        val repository = FileRepositoryBuilder.create(gitDir)
-        repository.create()
+        targets.removeAll(skipped)
 
-        Entry.repository = repository
+        val skippedMessage = "${r}repositories [${skipped.joinToString(", ")}] are already exists! if you want to delete and recreate repository, add 'true' to force argument."
 
-        return CommandExecuteResult(true, "${ChatColor.DARK_GREEN}successfully init repository!")
+        if (targets.size == 0)
+            return CommandExecuteResult(false, skippedMessage)
+        else if (skipped.size != 0)
+            sender?.sendMessage(skippedMessage)
+
+        return CommandExecuteResult(true, "${g}successfully init repository of worlds [$w${targets.joinToString("$g, $w")}$g] !!")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when(args.size) {
-            1 -> FIRST_ARGS_LIST
+            1 -> parent.availableWorldNames.apply { add("all") }
+            2 -> SECOND_ARGS_LIST
             else -> ARGS_LIST_EMPTY
         }
     }

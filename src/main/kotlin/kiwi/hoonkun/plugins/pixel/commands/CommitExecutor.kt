@@ -7,46 +7,88 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.lib.PersonIdent
 
-class CommitExecutor(private val plugin: Entry): Executor() {
+class CommitExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
         val THIRD_ARGS_LIST = mutableListOf("< commit_message >")
 
+        val RESULT_NO_COMMIT_MESSAGE =
+            CommandExecuteResult(false, "missing arguments. commit message must be specified.")
+
+        const val MESSAGE_NO_REPOSITORY = "repository with given world is not initialized!"
+
     }
 
+    override val usage: String = "commit < target_world > < commit_message >"
+    override val description: String = "creates new commit to given world's repository, in current branch."
+
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val repo = Entry.repository ?: return invalidRepositoryResult
-
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "missing arguments. commit target and messages are must be specified.")
-
         if (args.size == 1)
-            return CommandExecuteResult(false, "missing arguments. commit message must be specified.")
+            return RESULT_NO_COMMIT_MESSAGE
 
-        val head = repo.refDatabase.findRef("HEAD")
-        if (head.target.name == "HEAD")
-            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before commit.")
+        if (!isValidWorld(args[0]) && args[0] != "all")
+            return createUnknownWorldResult(args[0])
 
-        try {
-            IOWorker.addToVersionControl(plugin, dimensions(args[0]))
-        } catch (exception: UnknownDimensionException) {
-            return createDimensionExceptionResult(exception)
+        val targets = worldsWithAll(args[0]).toMutableList()
+        val excludedTargets = mutableListOf<String>()
+
+        targets.forEach {
+            val repo = parent.repositories[it] ?: run {
+                if (targets.size == 1)
+                    return CommandExecuteResult(
+                        false,
+                        "$r'$it' $MESSAGE_NO_REPOSITORY\nplease run '/pixel init' first."
+                    )
+
+                sender?.sendMessage("$r'$it' $MESSAGE_NO_REPOSITORY\nskipping...")
+                excludedTargets.add(it)
+                return@forEach
+            }
+
+            val head = repo.refDatabase.findRef("HEAD")
+            if (head.target.name == "HEAD") {
+                if (targets.size == 1)
+                    return CommandExecuteResult(
+                        false,
+                        "$r'$it' $MESSAGE_DETACHED_HEAD\nplease create branch using '/pixel branch' before commit."
+                    )
+
+                sender?.sendMessage("$r'$it' $MESSAGE_DETACHED_HEAD\nskipping...")
+                excludedTargets.add(it)
+            }
+        }
+        targets.removeAll(excludedTargets)
+        if (targets.size == 0) {
+            return CommandExecuteResult(
+                false,
+                "all requested commits are skipped!"
+            )
         }
 
-        val git = Git(repo)
+        IOWorker.addToVersionControl(parent, targets)
 
         return try {
-            git.add()
-                .addFilepattern(".")
-                .call()
+            val hashes = mutableListOf<String>()
 
-            val commit = git.commit()
-                .setMessage(args.slice(1 until args.size).joinToString(" "))
-                .setCommitter(PersonIdent(repo))
-                .call()
+            targets.forEach {
+                val repo = parent.repositories[it] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-            CommandExecuteResult(true, "${g}successfully committed with hash '$w${commit.name.substring(0 until 7)}$g'")
+                val git = Git(repo)
+
+                git.add()
+                    .addFilepattern(".")
+                    .call()
+
+                val commit = git.commit()
+                    .setMessage(args.slice(1 until args.size).joinToString(" "))
+                    .setCommitter(PersonIdent(repo))
+                    .call()
+
+                hashes.add(commit.name.substring(0 until 7))
+            }
+
+            CommandExecuteResult(true, "${g}successfully committed world [$w${targets.joinToString("$g, $w")}$g] with hash [$w${hashes.joinToString("$g, $w")}$g]")
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("commit", exception)
         }
@@ -54,7 +96,7 @@ class CommitExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when {
-            args.size == 1 -> ARGS_LIST_DIMENSIONS
+            args.size == 1 -> parent.repositoryKeys.apply { add("all") }
             args.size > 1 -> THIRD_ARGS_LIST
             else -> ARGS_LIST_EMPTY
         }

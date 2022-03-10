@@ -27,19 +27,17 @@ class Entry: JavaPlugin() {
 
         lateinit var levelName: String
 
-        var repository: Repository? = null
-
     }
 
     private val executors: Map<String, Executor> = mapOf(
-        "init" to InitializeExecutor(),
+        "init" to InitializeExecutor(this),
         "commit" to CommitExecutor(this),
         "discard" to DiscardExecutor(this),
         "reset" to ResetExecutor(this),
-        "branch" to BranchExecutor(),
+        "branch" to BranchExecutor(this),
         "checkout" to CheckoutExecutor(this),
         "merge" to MergeExecutor(this),
-        "list" to ListExecutor(),
+        "list" to ListExecutor(this),
         "tp" to TeleportExecutor(this),
         "whereis" to WhereIsExecutor(this)
     )
@@ -52,6 +50,11 @@ class Entry: JavaPlugin() {
 
     private lateinit var managers: Set<String>
 
+    lateinit var repositories: MutableMap<String, Repository>
+
+    val repositoryKeys get() = repositories.keys.toMutableList()
+    val availableWorldNames get() = server.worlds.filter { it.name != "__void__" && it.name != levelName }.map { it.name }.toMutableList()
+
     override fun onEnable() {
         super.onEnable()
 
@@ -62,7 +65,7 @@ class Entry: JavaPlugin() {
 
         Entry.dataFolder = dataFolder
         logFolder = File("$dataFolderPath/logs")
-        versionedFolder = File("$dataFolderPath/versioned")
+        versionedFolder = File("$dataFolderPath/repositories")
         clientFolder = File(dataFolderPath).parentFile.parentFile
 
         val managerFile = File("$dataFolder/pixel.managers")
@@ -75,14 +78,6 @@ class Entry: JavaPlugin() {
         levelName = properties.split("\n")
             .map { it.split("=") }
             .associate { Pair(it[0], if (it.size == 1) null else it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
-
-        val gitDir = File("${versionedFolder.absolutePath}/.git")
-        if (gitDir.exists()) {
-            val repositoryBuilder = FileRepositoryBuilder()
-            repositoryBuilder.gitDir = gitDir
-            repository = repositoryBuilder.build()
-            logger.log(Level.INFO, "find local git repository, initialized.")
-        }
 
         void = if (File("${clientFolder.absolutePath}/__void__").exists()) {
             logger.log(Level.INFO, "creating void world from existing file")
@@ -112,6 +107,19 @@ class Entry: JavaPlugin() {
         }
 
         server.createWorld(WorldCreator("${levelName}_overworld")) ?: throw Exception("cannot create overworld")
+
+        repositories = mutableMapOf<String, Repository>()
+            .apply {
+                server.worlds.map { it.name }.forEach {
+                    val gitDir = File("${versionedFolder.absolutePath}/$it/.git")
+                    if (!gitDir.exists()) return@forEach
+
+                    val builder = FileRepositoryBuilder()
+                    builder.gitDir = gitDir
+
+                    set(it, builder.build())
+                }
+            }
 
         server.onlinePlayers.forEach {
             it.setGravity(true)
@@ -227,9 +235,9 @@ class Entry: JavaPlugin() {
         val merger = (executors["merge"] as MergeExecutor)
 
         if (args.size == 1) {
-            return if (repository != null && !scopeRunning) {
+            return if (repositories.values.isNotEmpty() && !scopeRunning) {
                 executors.keys.toMutableList()
-            } else if (repository != null) {
+            } else if (repositories.values.isNotEmpty()) {
                 if (merger.state > 0) mutableListOf("merge")
                 else mutableListOf()
             } else {

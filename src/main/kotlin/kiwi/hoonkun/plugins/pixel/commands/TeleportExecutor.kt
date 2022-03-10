@@ -1,38 +1,43 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 
-class TeleportExecutor(private val plugin: Entry): Executor() {
+class TeleportExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
         val SECOND_ARGS_LIST = mutableListOf("dummy", "overworld")
 
+        val RESULT_NO_DESTINATION =
+            CommandExecuteResult(false, "missing argument. destination must be specified.")
+
+        val RESULT_INVALID_DESTINATION =
+            CommandExecuteResult(false, "invalid argument. destination must be one of 'dummy' or 'overworld'")
+
     }
 
-    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "missing arguments. destination and target must be specified.")
+    override val usage: String = "tp < player > < \"dummy\" | \"overworld\" >"
+    override val description: String = "teleport player to specified world"
 
-        val target = plugin.server.getPlayer(args[0]) ?: return CommandExecuteResult(false, "unknown player '${args[0]}'")
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        val target = parent.server.getPlayer(args[0]) ?: return CommandExecuteResult(false, "unknown player '${args[0]}'")
 
         if (args.size == 1)
-            return CommandExecuteResult(false, "missing argument. destination must be specified.")
+            return RESULT_NO_DESTINATION
 
         val destination = args[1]
 
         if (destination != "dummy" && destination != "overworld")
-            return CommandExecuteResult(false, "invalid argument. destination must be one of 'dummy' or 'overworld'")
+            return RESULT_INVALID_DESTINATION
 
-        plugin.server.scheduler.runTask(plugin, Runnable {
+        parent.server.scheduler.runTask(parent, Runnable {
             when (destination) {
-                "dummy" -> target.teleport(Location(plugin.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
+                "dummy" -> target.teleport(Location(parent.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
                 "overworld" -> {
-                    plugin.server.getWorld("${Entry.levelName}_overworld").also {
-                        if (it == null) sender?.sendMessage("${ChatColor.RED}overworld is unloaded by pixel command now.\nplease wait until pixel command finishes.")
+                    parent.server.getWorld("${Entry.levelName}_overworld").also {
+                        if (it == null) sender?.sendMessage("${r}overworld is unloaded by pixel command now.\nplease wait until pixel command finishes.")
                         else target.teleport(Location(it, target.location.x, target.location.y, target.location.z))
                     }
                 }
@@ -45,7 +50,7 @@ class TeleportExecutor(private val plugin: Entry): Executor() {
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> plugin.server.onlinePlayers.map { it.name }.toMutableList()
+            1 -> parent.server.onlinePlayers.map { it.name }.toMutableList()
             2 -> SECOND_ARGS_LIST
             else -> ARGS_LIST_EMPTY
         }

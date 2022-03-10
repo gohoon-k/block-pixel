@@ -67,21 +67,22 @@ class WorldLoader {
             "minecraft:light_block",
         )
 
+        private val environments = mutableMapOf<String, World.Environment>()
+
         private val lightSources = mutableListOf<Triple<Int, Int, Int>>()
 
-        private fun getWorld(plugin: Entry, dimension: String): World = plugin.server.getWorld("${Entry.levelName}_$dimension")!!
+        private fun getWorld(plugin: Entry, worldName: String): World = plugin.server.getWorld(worldName)!!
 
-        suspend fun unload(plugin: Entry, dimension: String) {
-            unload(plugin, getWorld(plugin, dimension))
+        suspend fun unload(plugin: Entry, worldName: String) {
+            unload(plugin, getWorld(plugin, worldName))
         }
 
         private suspend fun unload(plugin: Entry, world: World) {
             var unloaded = false
 
-            plugin.server.scheduler.runTask(plugin, Runnable {
-                world.isAutoSave = false
-                world.save()
+            environments[world.name] = world.environment
 
+            plugin.server.scheduler.runTask(plugin, Runnable {
                 do {
                     unloaded = plugin.server.unloadWorld(world, true)
                 } while (!unloaded)
@@ -90,17 +91,15 @@ class WorldLoader {
             while (!unloaded) { delay(100) }
         }
 
-        suspend fun load(plugin: Entry, dimension: String) {
-            val worldName = "${Entry.levelName}_$dimension"
-
+        suspend fun load(plugin: Entry, worldName: String) {
             var worldLoaded = false
             var waitTime = 0L
 
-            plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.createWorld(WorldCreator(worldName))!!.also { created ->
-                    worldLoaded = true
+            val creator = WorldCreator(worldName).environment(environments.getValue(worldName))
 
-                    created.isAutoSave = true
+            plugin.server.scheduler.runTask(plugin, Runnable {
+                plugin.server.createWorld(creator)!!.also { created ->
+                    worldLoaded = true
                     created.loadedChunks.forEach { chunk ->
                         chunk.unload()
                         chunk.load()
@@ -118,14 +117,14 @@ class WorldLoader {
                 if (waitTime % 5000L == 0L && messageIndex < message.size * 2) {
                     messageIndex++
                 }
-                if (messageIndex % 2 == 0) Executor.sendTitle("loading '$dimension' world, this may take some time.")
+                if (messageIndex % 2 == 0) Executor.sendTitle("loading '$worldName' world, this may take some time.")
                 else Executor.sendTitle(message[messageIndex / 2])
             }
             Executor.sendTitle(" ")
         }
 
-        suspend fun updateLights(plugin: Entry, dimension: String) {
-            updateLights(plugin, getWorld(plugin, dimension))
+        suspend fun updateLights(plugin: Entry, worldName: String) {
+            updateLights(plugin, getWorld(plugin, worldName))
         }
 
         private suspend fun updateLights(plugin: Entry, world: World) {
@@ -149,8 +148,8 @@ class WorldLoader {
             while (!complete) { delay(100) }
         }
 
-        fun movePlayersTo(plugin: Entry, dimension: String) {
-            movePlayersTo(plugin, getWorld(plugin, dimension))
+        fun movePlayersTo(plugin: Entry, worldName: String) {
+            movePlayersTo(plugin, getWorld(plugin, worldName))
         }
 
         private fun movePlayersTo(plugin: Entry, world: World) {
@@ -162,8 +161,8 @@ class WorldLoader {
             })
         }
 
-        fun returnPlayersTo(plugin: Entry, dimension: String) {
-            returnPlayersTo(plugin, getWorld(plugin, dimension))
+        fun returnPlayersTo(plugin: Entry, worldName: String) {
+            returnPlayersTo(plugin, getWorld(plugin, worldName))
         }
 
         private fun returnPlayersTo(plugin: Entry, world: World) {

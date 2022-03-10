@@ -7,19 +7,31 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.api.errors.GitAPIException
 
-class ResetExecutor(private val plugin: Entry): Executor() {
+class ResetExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
         val SECOND_ARGS_LIST = mutableListOf("< commit_hash | reset_steps >")
 
+        val RESULT_NO_TARGET =
+            CommandExecuteResult(false, "argument is missing. steps or commit hash must be specified.")
+
+        val RESULT_SUCCESS =
+            CommandExecuteResult(true, "${g}successfully reset commits.")
+
     }
 
-    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val repo = Entry.repository ?: return invalidRepositoryResult
+    override val usage: String = "reset < target_world > < commit_hash | reset_steps >"
+    override val description: String = "reset given world to specified commit or N steps backward commit"
 
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "argument is missing. back steps or commit name must be specified.")
+    override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        if (!isValidWorld(args[0]))
+            return createUnknownWorldResult(args[0])
+
+        val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+
+        if (args.size == 1)
+            return RESULT_NO_TARGET
 
         val target = args[1].toIntOrNull()
 
@@ -29,19 +41,19 @@ class ResetExecutor(private val plugin: Entry): Executor() {
                 .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
                 .call()
 
-            IOWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
+            IOWorker.replaceFromVersionControl(parent, worlds(args[0]))
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("reset", exception)
-        } catch (exception: UnknownDimensionException) {
-            return createDimensionExceptionResult(exception)
+        } catch (exception: UnknownWorldException) {
+            return createUnknownWorldResult(exception)
         }
 
-        return CommandExecuteResult(true, "${g}successfully reset commits.")
+        return RESULT_SUCCESS
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> ARGS_LIST_DIMENSIONS
+            1 -> parent.repositoryKeys
             2 -> SECOND_ARGS_LIST
             else -> ARGS_LIST_EMPTY
         }

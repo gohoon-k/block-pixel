@@ -4,23 +4,27 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import org.bukkit.command.CommandSender
 
-class DiscardExecutor(private val plugin: Entry): Executor() {
+class DiscardExecutor(parent: Entry): Executor(parent) {
+
+    companion object {
+        val RESULT_SUCCESSFUL = CommandExecuteResult(true, "${g}successfully discard uncommitted changes")
+    }
+
+    override val usage: String = "discard < target_world >"
+    override val description: String = "discards all uncommitted changes of given world."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "missing argument. discard target must be specified.")
-
         try {
-            IOWorker.replaceFromVersionControl(plugin, dimensions(args[0]))
-        } catch (exception: UnknownDimensionException) {
-            return createDimensionExceptionResult(exception)
+            IOWorker.replaceFromVersionControl(parent, worlds(args[0]))
+        } catch (exception: UnknownWorldException) {
+            return createUnknownWorldResult(exception)
         }
-        return CommandExecuteResult(true, "${g}successfully discard uncommitted changes")
+        return RESULT_SUCCESSFUL
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
-            1 -> ARGS_LIST_DIMENSIONS
+            1 -> parent.repositoryKeys
             else -> ARGS_LIST_EMPTY
         }
     }

@@ -11,60 +11,63 @@ class IOWorker {
 
     companion object {
 
-        private val clientDimDir = mapOf(
-            "overworld" to "",
-            "nether" to "/DIM-1",
-            "the_end" to "/DIM1"
-        )
+        private fun getClientPath(anvilType: AnvilType, worldName: String): String {
+            val worldDir = "${Entry.clientFolder.absolutePath}/$worldName"
+            val dimDir = File(worldDir).listFiles()?.find { it.name.contains("DIM") }
 
-        private fun getClientPath(anvilType: AnvilType, dimension: String) =
-            "${Entry.clientFolder.absolutePath}/${Entry.levelName}_${dimension}${clientDimDir[dimension]}/${anvilType.path}"
+            val result = if (dimDir == null) "$worldDir/${anvilType.path}"
+            else "$worldDir/${dimDir.name}/${anvilType.path}"
 
-        private fun getVersionedPath(anvilType: AnvilType, dimension: String) =
-            "${Entry.versionedFolder.absolutePath}/${dimension}/${anvilType.path}"
+            println(result)
+
+            return result
+        }
+
+        private fun getVersionedPath(anvilType: AnvilType, worldName: String) =
+            "${Entry.versionedFolder.absolutePath}/${worldName}/${anvilType.path}"
 
 
         fun repositoryWorldNBTs(
-            dimensions: List<String>
+            worlds: List<String>
         ): Map<String, WorldAnvil> {
-            return dimensions.associateWith { WorldAnvil(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
+            return worlds.associateWith { WorldAnvil(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
         }
 
         private inline fun <T: ChunkData> repositoryNBT(
             anvilType: AnvilType,
-            dimension: String,
+            world: String,
             generator: (ChunkLocation, Int, CompoundTag) -> T
         ): Anvil<T> {
-            val dimensionPath = getVersionedPath(anvilType, dimension)
+            val dimensionPath = getVersionedPath(anvilType, world)
             val anvilFiles = File(dimensionPath).listFiles()
 
             return anvilFiles?.read()?.toAnvil(generator) ?: mapOf()
         }
 
-        private fun repositoryChunk(dimension: String): Anvil<Terrain> {
+        private fun repositoryChunk(world: String): Anvil<Terrain> {
             return repositoryNBT(
                 AnvilType.TERRAIN,
-                dimension
+                world
             ) { _, timestamp, nbt -> Terrain(timestamp, nbt) }
         }
 
-        private fun repositoryPoi(dimension: String): Anvil<Poi> {
+        private fun repositoryPoi(world: String): Anvil<Poi> {
             return repositoryNBT(
                 AnvilType.POI,
-                dimension
+                world
             ) { location, timestamp, nbt -> Poi(location, timestamp, nbt) }
         }
 
-        private fun repositoryEntity(dimension: String): Anvil<Entity> {
+        private fun repositoryEntity(world: String): Anvil<Entity> {
             return repositoryNBT(
                 AnvilType.ENTITY,
-                dimension
+                world
             ) { _, timestamp, nbt -> Entity(timestamp, nbt) }
         }
 
-        fun writeWorldAnvilToClient(regionAnvil: WorldAnvilFormat, dimension: String) {
+        fun writeWorldAnvilToClient(regionAnvil: WorldAnvilFormat, world: String) {
             regionAnvil.entries.forEach { (type, anvil) ->
-                val path = getClientPath(type, dimension)
+                val path = getClientPath(type, world)
                 anvil.entries.forEach { (location, bytes) ->
                     val file = File("$path/r.${location.x}.${location.z}.mca")
                     file.writeBytes(bytes)
@@ -74,42 +77,42 @@ class IOWorker {
 
         suspend fun addToVersionControl(
             plugin: Entry,
-            dimensions: List<String>,
+            worlds: List<String>,
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            dimensions.forEach { dimension ->
+            worlds.forEach { dimension ->
                 copyAnvilFiles(plugin, dimension,false, needsUnload, needsLoad)
             }
         }
 
         suspend fun replaceFromVersionControl(
             plugin: Entry,
-            dimensions: List<String>,
+            worlds: List<String>,
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            dimensions.forEach { dimension ->
+            worlds.forEach { dimension ->
                 copyAnvilFiles(plugin, dimension, true, needsUnload, needsLoad)
             }
         }
 
         private suspend fun copyAnvilFiles(
             plugin: Entry,
-            dimension: String,
+            world: String,
             replace: Boolean,
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
             if (needsUnload) {
-                WorldLoader.movePlayersTo(plugin, dimension)
-                WorldLoader.unload(plugin, dimension)
+                WorldLoader.movePlayersTo(plugin, world)
+                WorldLoader.unload(plugin, world)
             }
 
             AnvilType.values().forEach { anvilType ->
 
-                val fromPath = if (!replace) getClientPath(anvilType, dimension) else getVersionedPath(anvilType, dimension)
-                val toPath = if (!replace) getVersionedPath(anvilType, dimension) else getClientPath(anvilType, dimension)
+                val fromPath = if (!replace) getClientPath(anvilType, world) else getVersionedPath(anvilType, world)
+                val toPath = if (!replace) getVersionedPath(anvilType, world) else getClientPath(anvilType, world)
 
                 val fromDirectory = File(fromPath)
                 val toDirectory = File(toPath)
@@ -117,14 +120,14 @@ class IOWorker {
                 if (!fromDirectory.exists()) fromDirectory.mkdirs()
                 if (!toDirectory.exists()) toDirectory.mkdirs()
 
-                val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find directory of anvils with dimension '$dimension'")
+                val fromFiles = fromDirectory.listFiles() ?: throw Exception("cannot find directory of anvils with dimension '$world'")
                 fromFiles.forEach { file -> file.copyTo(File("${toDirectory.absolutePath}/${file.name}"), true) }
 
             }
 
             if (needsLoad) {
-                WorldLoader.load(plugin, dimension)
-                WorldLoader.returnPlayersTo(plugin, dimension)
+                WorldLoader.load(plugin, world)
+                WorldLoader.returnPlayersTo(plugin, world)
             }
         }
 

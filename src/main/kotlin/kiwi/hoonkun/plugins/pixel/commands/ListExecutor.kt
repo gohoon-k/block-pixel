@@ -10,29 +10,44 @@ import org.eclipse.jgit.api.errors.NoHeadException
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ListExecutor: Executor() {
+class ListExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
         val FIRST_ARGS_LIST = mutableListOf("commits", "branches")
         val SECOND_ARGS_LIST = mutableListOf("< page >")
 
+        val RESULT_NO_TARGET_WORLD =
+            CommandExecuteResult(false, "argument is missing. target world is must be specified.")
+
+        val RESULT_INVALID_LIST_TYPE =
+            CommandExecuteResult(false, "invalid argument. only 'commits' and 'branches' are allowed to list up.")
+
+        val RESULT_INVALID_PAGE =
+            CommandExecuteResult(false, "invalid argument. page argument must be integer.")
+
     }
+
+    override val usage: String = "list < \"commits\" | \"branches\" > < target_world > [ page ]"
+    override val description: String = "list up commits of current branch or branches of given world's repository."
 
     private val pageSize = 9
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val repo = Entry.repository ?: return invalidRepositoryResult
+        if (args.size == 1)
+            return RESULT_NO_TARGET_WORLD
 
-        if (args.isEmpty())
-            return CommandExecuteResult(false, "argument is missing. please specify what to list up.")
+        if (!isValidWorld(args[1]))
+            return createUnknownWorldResult(args[1])
+
+        val repo = parent.repositories[args[1]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
         val what = args[0]
         if (what != "commits" && what != "branches")
-            return CommandExecuteResult(false, "invalid argument. only 'commits' and 'branches' are allowed to list up.")
+            return RESULT_INVALID_LIST_TYPE
 
-        val page = if (args.size == 2) {
-            args[1].toIntOrNull() ?: return CommandExecuteResult(false, "invalid argument. page argument must be integer.")
+        val page = if (args.size == 3) {
+            args[2].toIntOrNull() ?: return RESULT_INVALID_PAGE
         } else {
             0
         }
@@ -99,7 +114,8 @@ class ListExecutor: Executor() {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> FIRST_ARGS_LIST
-            2 -> if (args[0] == "commits") SECOND_ARGS_LIST else ARGS_LIST_EMPTY
+            2 -> parent.repositoryKeys
+            3 -> if (args[0] == "commits") SECOND_ARGS_LIST else ARGS_LIST_EMPTY
             else -> ARGS_LIST_EMPTY
         }
     }

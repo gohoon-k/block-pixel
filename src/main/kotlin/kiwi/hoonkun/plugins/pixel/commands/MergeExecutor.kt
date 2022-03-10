@@ -16,13 +16,12 @@ import org.eclipse.jgit.revwalk.filter.RevFilter
 import kotlin.coroutines.cancellation.CancellationException
 
 
-class MergeExecutor(private val plugin: Entry): Executor() {
+class MergeExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
         val FIRST_ARGS_LIST_WHEN_MERGING = mutableListOf("abort")
 
-        val FIRST_ARGS_LIST = mutableListOf("overworld", "nether", "the_end")
         val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >")
         val THIRD_ARGS_LIST = mutableListOf("keep", "replace")
 
@@ -33,51 +32,76 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         const val APPLYING_LIGHTS = -3
         const val COMMITTING = -4
 
+        val RESULT_NO_MERGE_SOURCE =
+            CommandExecuteResult(false, "missing arguments. merge source must be specified.")
+
+        val RESULT_NO_MERGE_MODE =
+            CommandExecuteResult(false, "missing arguments. merge mode must be specified.")
+
+        val RESULT_INVALID_MERGE_MODE =
+            CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
+
+        val RESULT_DETACHED_HEAD =
+            CommandExecuteResult(false, "$MESSAGE_DETACHED_HEAD\njust create new branch here, before merge.")
+
+        val RESULT_CANCELED =
+            CommandExecuteResult(true, "merge operation was canceled by operator.")
+
+        val RESULT_FAILED =
+            CommandExecuteResult(false, "failed to merge because of internal exception.")
+
     }
 
     var state = IDLE
 
+    override val usage: String = "merge < target_world > < branch_name | commit_hash > < \"keep\" | \"replace\" > < commit_confirm >"
+    override val description: String = "merge another branch into current branch using specified merge mode"
+
     private var initialBranch: String? = null
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val repo = Entry.repository ?: return invalidRepositoryResult
+        if (args.size == 1)
+            return RESULT_NO_MERGE_SOURCE
 
-        if (args.size < 3)
-            return CommandExecuteResult(false, "missing arguments. target world, merge source, merge mode must be specified.")
+        if (args.size == 2)
+            return RESULT_NO_MERGE_MODE
 
-        if (args.size < 4)
-            return CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before merging.\nif yes, pass 'true' to last argument.")
+        val mode = when (args[2]) {
+            "keep" -> MergeWorker.Companion.MergeMode.KEEP
+            "replace" -> MergeWorker.Companion.MergeMode.REPLACE
+            else -> return RESULT_INVALID_MERGE_MODE
+        }
+
+        if (isValidWorld(args[0]))
+            return createUnknownWorldResult(args[0])
+
+        val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+
+        if (args.size == 4)
+            return RESULT_NO_COMMIT_CONFIRM
 
         if (args[3] != "true")
-            return uncommittedChangesResult
+            return RESULT_UNCOMMITTED
 
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")
-            return CommandExecuteResult(false, "it seems that head is detached from any other branches.\njust create new branch here, before merge.")
-
-        if (args[0] == "all")
-            return CommandExecuteResult(false, "you cannot merge all dimensions at once. please use single world argument.")
+            return RESULT_DETACHED_HEAD
 
         try {
-            val dimensions = dimensions(args[0])
+            val worlds = worlds(args[0])
             val from = args[1]
-            val mode = if (args[2] == "keep")
-                MergeWorker.Companion.MergeMode.KEEP
-            else if (args[2] == "replace")
-                MergeWorker.Companion.MergeMode.REPLACE
-            else return CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
 
-            initialBranch = Entry.repository?.branch ?: return invalidRepositoryResult
+            initialBranch = repo.branch ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-            val message = merge(repo, from, dimensions, mode)
+            val message = merge(repo, from, worlds, mode)
 
             if (message != null) {
                 sendTitle("finished merging, reloading world...")
 
-                IOWorker.replaceFromVersionControl(plugin, dimensions, needsUnload = false)
+                IOWorker.replaceFromVersionControl(parent, worlds, needsUnload = false)
 
-                dimensions.forEach {
-                    WorldLoader.returnPlayersTo(plugin, it)
+                worlds.forEach {
+                    WorldLoader.returnPlayersTo(parent, it)
                 }
             }
 
@@ -86,16 +110,16 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             return if (message != null)
                 CommandExecuteResult(true, message)
             else
-                CommandExecuteResult(true, "merge operation was canceled by operator.")
-        } catch (exception: UnknownDimensionException) {
-            return createDimensionExceptionResult(exception)
+                RESULT_CANCELED
+        } catch (exception: UnknownWorldException) {
+            return createUnknownWorldResult(exception)
         } catch (e: Exception) {
             e.printStackTrace()
 
             val branch = initialBranch
 
             if (branch != null)
-                Git(Entry.repository)
+                Git(repo)
                     .checkout()
                     .setName(branch)
                     .call()
@@ -106,7 +130,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
                 return CommandExecuteResult(false, e.message!!)
             }
 
-            return CommandExecuteResult(false, "failed to merge because of internal exception.")
+            return RESULT_FAILED
         }
     }
 
@@ -115,7 +139,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             return FIRST_ARGS_LIST_WHEN_MERGING
         }
         return when (args.size) {
-            1 -> FIRST_ARGS_LIST
+            1 -> parent.repositoryKeys
             2 -> SECOND_ARGS_LIST
             3 -> THIRD_ARGS_LIST
             4 -> ARGS_LIST_COMMIT_CONFIRM
@@ -126,7 +150,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
     private suspend fun merge(
         repo: Repository,
         source: String,
-        dimensions: List<String>,
+        worlds: List<String>,
         mode: MergeWorker.Companion.MergeMode
     ): String? {
         val git = Git(repo)
@@ -139,7 +163,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
         sendTitle("reading current regions...")
-        val into = IOWorker.repositoryWorldNBTs(dimensions)
+        val into = IOWorker.repositoryWorldNBTs(worlds)
 
         try {
             git.checkout().setName(source).call()
@@ -153,7 +177,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             else throw NoValidCommitsException()
 
         sendTitle("reading current regions...")
-        val from = IOWorker.repositoryWorldNBTs(dimensions)
+        val from = IOWorker.repositoryWorldNBTs(worlds)
 
         val commitLookup = RevWalk(git.repository)
         val intoC = commitLookup.lookupCommit(intoCommit.id)
@@ -169,7 +193,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         git.checkout().setName(mergeBase.name).call()
 
         sendTitle("reading merge-base regions...")
-        val ancestor = IOWorker.repositoryWorldNBTs(dimensions)
+        val ancestor = IOWorker.repositoryWorldNBTs(worlds)
 
         val branch = initialBranch
 
@@ -182,27 +206,27 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         try {
             state = MERGING
 
-            val mergedDimensions = dimensions.associateWith { dimension ->
-                sendTitle("start merging '$dimension'...")
+            val mergedWorlds = worlds.associateWith { world ->
+                sendTitle("start merging '$world'...")
                 delay(1000)
                 val clientRegions = MergeWorker.merge(
-                    from.getValue(dimension),
-                    into.getValue(dimension),
-                    ancestor.getValue(dimension),
+                    from.getValue(world),
+                    into.getValue(world),
+                    ancestor.getValue(world),
                     mode
                 ).toWorldAnvilFormat()
-                sendTitle("merging '$dimension' finished.")
+                sendTitle("merging '$world' finished.")
                 clientRegions
             }
 
-            mergedDimensions.forEach { (dimension, regions) ->
+            mergedWorlds.forEach { (world, regions) ->
                 state = RELOADING_WORLDS
-                WorldLoader.movePlayersTo(plugin, dimension)
-                WorldLoader.unload(plugin, dimension)
-                IOWorker.writeWorldAnvilToClient(regions, dimension)
-                WorldLoader.load(plugin, dimension)
+                WorldLoader.movePlayersTo(parent, world)
+                WorldLoader.unload(parent, world)
+                IOWorker.writeWorldAnvilToClient(regions, world)
+                WorldLoader.load(parent, world)
                 state = APPLYING_LIGHTS
-                WorldLoader.updateLights(plugin, dimension)
+                WorldLoader.updateLights(parent, world)
             }
         } catch (exception: CancellationException) {
             state = RELOADING_WORLDS
@@ -213,7 +237,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
         state = RELOADING_WORLDS
 
         sendTitle("light updated finished, reloading world...")
-        IOWorker.addToVersionControl(plugin, dimensions, needsLoad = false)
+        IOWorker.addToVersionControl(parent, worlds, needsLoad = false)
 
         state = COMMITTING
 
@@ -221,11 +245,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
             if (fromC.name.startsWith(source)) source
             else "$source(${fromC.name.substring(0 until 7)})"
 
-        val message = if (dimensions.size != 1) {
-            "'$w$actualSource$g' into '$w$branch$g' of ${w}all dimensions$g"
-        } else {
-            "'$w$actualSource$g' into '$w$branch$g' of $w${dimensions[0]}$g"
-        }
+        val message = "'$w$actualSource$g' into '$w$branch$g' of $w${worlds[0]}$g"
 
         git.add()
             .addFilepattern(".")
@@ -245,7 +265,7 @@ class MergeExecutor(private val plugin: Entry): Executor() {
 
     class NullMergeBaseException: MergeException("merge failed, cannot find valid merge base.")
 
-    class InvalidMergeOperationException: MergeException("invalid merge operation. source commit equals with into commit.")
+    class InvalidMergeOperationException: MergeException("invalid merge operation. source commit equals with current commit.")
 
     class NoValidCommitsException: MergeException("merge failed, there are no commits exists.\ndid you make any commits?")
 
