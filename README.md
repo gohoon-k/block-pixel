@@ -106,20 +106,20 @@
   `force` 옵션이 `true`로 지정되고 이미 저장소가 있을 경우 기존 것은 삭제되고 다시 초기화됩니다.
 
 ### 새로운 백업지점 만들기
-- ```/pixel commit <dimension> <commit_message>```  
+- ```/pixel commit <world> <commit_message>```  
   현재 평행세계의 새로운 백업지점을 만듭니다.
    - dimension : 백업지점을 만들 월드
    - commit_message : 백업지점에 붙힐 메시지 (예시: "집을 지었음")
 
 ### 시간 되돌리기
-- ```/pixel reset <dimension> <steps|commit_hash>```  
+- ```/pixel reset <world> <steps|commit_hash>```  
   시간을 **뒤로 되돌립니다**. 타겟 지점보다 뒤에 이루어진 모든 변경사항이 삭제됩니다.
    - dimension : 되감기를 반영할 월드
    - steps : 뒤로 몇 백업지점을 되감아 지울지에 대한 값 (예시: 마지막 백업지점의 바로 이전 백업지점으로 되감으려면 1)
    - commit_hash : 되감기하여 돌아갈 백업지점의 고유 해시
 
 
-- ```/pixel discard <dimension>```  
+- ```/pixel discard <world>```  
   마지막 백업지점으로 월드를 되감기합니다.
    - dimension : 변경사항을 취소할 월드
 
@@ -131,7 +131,7 @@
    - branch_to_delete : 첫 인수가 `-d` 일 경우 반드시 전달해야함. 삭제할 평행세계의 이름.
 
 ### 백업지점 및 평행세계 사이의 이동
-- ```/pixel checkout <dimension> <branch|commit_hash> <commit_confirm>```  
+- ```/pixel checkout <world> <branch|commit_hash> <commit_confirm>```  
   특정 백업지점, 혹은 평행세계 사이를 **이동**합니다.  
   타겟 이후의 변경사항이 삭제되지 않습니다.
    - dimension : 시간이동 이후의 상황을 반영할 월드
@@ -140,11 +140,11 @@
    - commit_confirm : 시간이동하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
 
 
-- ```/pixel checkout <dimension> -recover```  
+- ```/pixel checkout <world> -recover```  
   버전관리 데이터가 꼬였을 것으로 예상되는 경우, 마지막 커밋 상태로 버전관리 데이터를 clean 할 수 있습니다.
 
 ### 평행세계 합치기
-- ```/pixel merge <dimension> <branch|commit_hash> <merge_mode> <commit_confirm>```  
+- ```/pixel merge <world> <branch|commit_hash> <merge_mode> <commit_confirm>```  
   두 평행세계를 합칩니다. **위험한 기능이므로 사용에 주의해주십시오**
    - dimension : 병합을 진행할 월드
    - branch : 병합을 진행할 source 평행세계. (A를 B에 병합한다고 할 때 A를 말함)
@@ -157,9 +157,10 @@
   병합을 중단합니다. <b>병합이 현재 진행중일 때만 수행 가능합니다.</b>
 
 ### 백업지점 및 평행세계 목록 확인
-- ```/pixel list <what>```  
+- ```/pixel list <what> [page]```  
   백업지점, 혹은 평행세계의 목록을 출력합니다. 백업지점의 경우 **현재 평행세계에 포함된 것만** 출력합니다.
    - what : commits 혹은 branches 중 하나. 각각 커밋의 목록과 브랜치의 목록을 출력합니다.
+   - page : what 인수가 commits 였을 경우 유효한 인수. 커밋 목록의 여러 페이지 중 몇 페이지를 보여줄지 정합니다.
 
 ### 기타 편의기능
 - ```/pixel tp <target> <dimension>```  
