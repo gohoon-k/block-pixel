@@ -91,14 +91,16 @@
 
 ## 사용 가능한 모든 커맨드
 ### `/pixel` 커맨드 사용 권한 관리
-- ```pixel allow <player_name>```  
+- ```pixel allow <player>```  
   <b>서버 콘솔에서만 사용 가능</b>  
   특정 사용자가 아래의 나머지 `/pixel` 커맨드를 사용할 수 있도록 허용합니다.
+  - player : `/pixel` 커맨드 사용을 허용할 플레이어의 이름
   
 
-- ```pixel deny <player_name>```  
+- ```pixel deny <player>```  
   <b>서버 콘솔에서만 사용 가능</b>  
   특정 사용자가 아래의 나머지 `/pixel` 커맨드를 사용할 수 없도록 권한을 취소합니다.
+  - player : `/pixel` 커맨드 사용 권한을 취소할 플레이어의 이름
 
 ### 플러그인 초기화
 - ```/pixel init <world> [force]```  
@@ -113,11 +115,11 @@
    - commit_message : 백업지점에 붙힐 메시지 (예시: "집을 지었음")
 
 ### 시간 되돌리기
-- ```/pixel reset <world> <steps|commit_hash>```  
+- ```/pixel reset <world> <commit|steps>```  
   시간을 **뒤로 되돌립니다**. 타겟 지점보다 뒤에 이루어진 모든 변경사항이 삭제됩니다.
    - world : 되감기를 반영할 월드
    - steps : 뒤로 몇 백업지점을 되감아 지울지에 대한 값 (예시: 마지막 백업지점의 바로 이전 백업지점으로 되감으려면 1)
-   - commit_hash : 되감기하여 돌아갈 백업지점의 고유 해시
+   - commit : 되감기하여 돌아갈 백업지점의 고유 해시
 
 
 - ```/pixel discard <world>```  
@@ -125,34 +127,34 @@
    - world : 변경사항을 취소할 월드
 
 ### 새로운 평행세계 만들기
-- ```/pixel branch <world> <new_branch_name|-d> [branch_to_delete]```  
+- ```/pixel branch <world> <new_branch|-d> [branch_to_delete]```  
   현재의 백업지점을 현재로 하는 새로운 평행세계를 만들거나, 혹은 현재 속해있지 않은 이미 있는 평행세계 하나를 지웁니다.
    - world : 평행세계를 만들 월드
-   - new_branch_name : 생성할 평행세계의 이름
+   - new_branch : 생성할 평행세계의 이름
    - -d : 평행세계를 삭제하려는 경우 해당 값을 인수에 전달
    - branch_to_delete : 첫 인수가 `-d` 일 경우 반드시 전달해야함. 삭제할 평행세계의 이름.
 
 ### 백업지점 및 평행세계 사이의 이동
-- ```/pixel checkout <world> <branch|commit_hash> <commit_confirm>```  
+- ```/pixel checkout <world> <branch|commit> <committed>```  
   특정 백업지점, 혹은 평행세계 사이를 **이동**합니다.  
   타겟 이후의 변경사항이 삭제되지 않습니다.
    - world : 시간이동 이후의 상황을 반영할 월드
    - branch : 시간이동으로 이동할 타겟 브랜치
-   - commit_hash : 시간이동으로 이동할 타겟 백업지점
-   - commit_confirm : 시간이동하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
+   - commit : 시간이동으로 이동할 타겟 백업지점의 고유 해시
+   - committed : 시간이동하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
 
 
 - ```/pixel checkout <world> -recover```  
   버전관리 데이터가 꼬였을 것으로 예상되는 경우, 마지막 커밋 상태로 버전관리 데이터를 clean 할 수 있습니다.
 
 ### 평행세계 합치기
-- ```/pixel merge <world> <branch|commit_hash> <merge_mode> <commit_confirm>```  
+- ```/pixel merge <world> <branch|commit> <mode> <committed>```  
   두 평행세계를 합칩니다. **위험한 기능이므로 사용에 주의해주십시오**
    - world : 병합을 진행할 월드
    - branch : 병합을 진행할 source 평행세계. (A를 B에 병합한다고 할 때 A를 말함)
-   - commit_hash : 병합을 진행할 source 백업지점. (A를 B에 병합한다고 할 때 A를 말함)
-   - merge_mode : keep 혹은 replace 중 하나. keep 일 경우 병합 충돌 발생 시 현재 평행세계의 값을, replace 일 경우 source 평행세계의 값을 반영합니다.
-   - commit_confirm : 병합하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
+   - commit : 병합을 진행할 source 백업지점의 고유 해시. (A를 B에 병합한다고 할 때 A를 말함)
+   - mode : keep 혹은 replace 중 하나. keep 일 경우 병합 충돌 발생 시 현재 평행세계의 값을, replace 일 경우 source 평행세계의 값을 반영합니다.
+   - committed : 병합하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
 
 
 - ```/pixel merge abort```  
@@ -166,16 +168,16 @@
    - page : what 인수가 commits 였을 경우 유효한 인수. 커밋 목록의 여러 페이지 중 몇 페이지를 보여줄지 정합니다.
 
 ### 기타 편의기능
-- ```/pixel tp <target> <world>```  
+- ```/pixel tp <player> <"dummy"|"overworld">```  
   플레이어를 지정한 월드의 동일한 좌표 위치로 텔레포트합니다.  
   사용 중 뭔가 문제가 생겨 공허 세계에 남겨졌거나, 어떠한 이유로 버전관리가 되지 않는 기존의 월드로 돌아가려면 사용합니다.
-   - target : 텔레포트할 플레이어의 닉네임
+   - player : 텔레포트할 플레이어의 닉네임
    - world : 도착 월드. dummy(기존의 Overworld(<b><i>level_name</i></b> 월드)) 혹은 overworld(버전관리가 진행되는 Overworld(<b><i>level_name</i>_overworld</b> 월드)) 중 하나.
 
 
-- ```/pixel whereis <target>```  
+- ```/pixel whereis <player>```  
   플레이어가 현재 어느 월드에 있는지를 출력합니다.
-   - target : 확인할 플레이어의 닉네임
+   - player : 확인할 플레이어의 닉네임
 
 ## 이 플러그인에 대해 더 알아보기
 위의 문서는 최대한 간략화된 문서입니다.  
