@@ -123,8 +123,8 @@ class MergeWorker {
                 )
 
                 val anvilLocation = AnvilLocation(
-                    floor(nbtLocation.x / 32.0).toInt(),
-                    floor(nbtLocation.z / 32.0).toInt()
+                    floor(entityEach.pos[0] / 32.0).toInt(),
+                    floor(entityEach.pos[2] / 32.0).toInt()
                 )
 
                 if (!mergedMutableEntity.containsKey(anvilLocation))
@@ -243,8 +243,8 @@ class MergeWorker {
                 )
 
                 val anvilLocation = AnvilLocation(
-                    floor(nbtLocation.x / 32.0).toInt(),
-                    floor(nbtLocation.z / 32.0).toInt()
+                    floor(record.pos[0] / 16.0 / 32.0).toInt(),
+                    floor(record.pos[2] / 16.0 / 32.0).toInt()
                 )
 
                 val sectionY = floor(record.pos[1] / 16.0).toInt()
