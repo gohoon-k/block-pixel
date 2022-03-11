@@ -56,7 +56,7 @@ class Entry: JavaPlugin() {
         if (!dataFolder.exists()) dataFolder.mkdirs()
 
         versionedFolder = File("${dataFolder.absolutePath}/repositories")
-        clientFolder = dataFolder.parentFile.parentFile
+        clientFolder = dataFolder.absoluteFile.parentFile.parentFile
 
         managers = File("${dataFolder.absolutePath}/pixel.managers")
             .apply { if (!exists()) createNewFile() }
@@ -101,7 +101,7 @@ class Entry: JavaPlugin() {
         repositories = server.worlds
             .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
             .filter { it.exists() }
-            .associate { it.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
+            .associate { it.absoluteFile.parentFile.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
             .toMutableMap()
 
         server.pluginManager.registerEvents(PlayerPortalListener(this), this)
