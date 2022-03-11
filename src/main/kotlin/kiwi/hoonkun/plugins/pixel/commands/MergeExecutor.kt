@@ -50,6 +50,24 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         val RESULT_FAILED =
             CommandExecuteResult(false, "failed to merge because of internal exception.")
 
+        val RESULT_ABORT_SUCCESS =
+            CommandExecuteResult(true, "merge operation is canceled by operator.")
+
+        val RESULT_ABORT_NOT_MERGING =
+            CommandExecuteResult(false, "merger is not merging any commits")
+
+        val RESULT_ABORT_LIGHT_UPDATING =
+            CommandExecuteResult(false, "cannot abort merge operation while updating lights of world")
+
+        val RESULT_ABORT_WORLD_LOADING =
+            CommandExecuteResult(false, "cannot abort merge operation while world is loading")
+
+        val RESULT_ABORT_COMMITTING =
+            CommandExecuteResult(false, "cannot abort merge operation while committing merged data into local repository")
+
+        val RESULT_ABORT_IMPOSSIBLE =
+            CommandExecuteResult(false, "DODGE!!")
+
     }
 
     var state = IDLE
@@ -60,6 +78,19 @@ class MergeExecutor(parent: Entry): Executor(parent) {
     private var initialBranch: String? = null
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        if (args[0] == "abort" && state > 0) {
+            parent.job?.cancel()
+            return RESULT_ABORT_SUCCESS
+        } else if (args[0] == "abort" && state < 0) {
+            return when (state) {
+                IDLE -> RESULT_ABORT_NOT_MERGING
+                APPLYING_LIGHTS -> RESULT_ABORT_LIGHT_UPDATING
+                RELOADING_WORLDS -> RESULT_ABORT_WORLD_LOADING
+                COMMITTING -> RESULT_ABORT_COMMITTING
+                else -> RESULT_ABORT_IMPOSSIBLE
+            }
+        }
+
         if (args.size == 1)
             return RESULT_NO_MERGE_SOURCE
 

@@ -13,6 +13,8 @@ abstract class Executor(val parent: Entry) {
 
     companion object {
 
+        const val ROOT_NAME = "pixel"
+
         val ARGS_LIST_EMPTY = mutableListOf<String>()
 
         val ARGS_LIST_COMMIT_CONFIRM = mutableListOf("< all_change_committed >")
@@ -52,7 +54,7 @@ abstract class Executor(val parent: Entry) {
     abstract val usage: String
     abstract val description: String
 
-    private val commandRoot: String = "/pixel "
+    private val commandRoot: String = "/$ROOT_NAME "
 
     private val help: String get() = "$w$commandRoot${usage.ellipsizeChat()}\n$g$description"
 

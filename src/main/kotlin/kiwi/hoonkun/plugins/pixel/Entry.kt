@@ -28,6 +28,11 @@ class Entry: JavaPlugin() {
 
     }
 
+    private val pExecutors: Map<String, Executor> = mapOf(
+        "allow" to AllowExecutor(this),
+        "deny" to DenyExecutor(this)
+    )
+
     private val executors: Map<String, Executor> = mapOf(
         "init" to InitializeExecutor(this),
         "commit" to CommitExecutor(this),
@@ -41,9 +46,9 @@ class Entry: JavaPlugin() {
         "whereis" to WhereIsExecutor(this)
     )
 
-    private var job: Job? = null
+    var job: Job? = null
 
-    private lateinit var managers: Set<String>
+    lateinit var managers: Set<String>
 
     lateinit var repositories: MutableMap<String, Repository?>
 
@@ -124,69 +129,48 @@ class Entry: JavaPlugin() {
         label: String,
         args: Array<out String>
     ): Boolean {
-        if (command.name != "pixel") return false
+        if (command.name != Executor.ROOT_NAME) return false
 
         if (args.isEmpty()) {
             sender.sendMessage("pixel.minecraft-git main command.")
             return false
         }
 
-        if (args[0] == "allow" || args[0] == "deny") {
-            if (sender !is ConsoleCommandSender) {
-                sender.sendMessage(ChatColor.RED + "unknown command '${args[0]}'")
-            } else if (args.size == 1) {
-                sender.sendMessage("you have to specify who to ${args[0]} pixel commands.")
-            } else {
-                if (args[0] == "allow") allowPlayerAsManager(args[1])
-                else denyPlayerAsManager(args[1])
-            }
-            return true
-        }
-
-        if (!managers.contains(sender.name)) {
-            sender.sendMessage("you don't have permissions to run this command.")
-            return true
-        }
-
+        val operation = args[0]
         val remainingArgs = args.slice(1 until args.size)
 
-        val executor = executors[args[0]] ?: run {
-            sender.sendMessage(ChatColor.RED + "unknown command '${args[0]}'")
+        val isP = pExecutors.keys.contains(operation)
+
+        if (isP && sender is ConsoleCommandSender) {
+            job = CoroutineScope(Dispatchers.IO).launch {
+                pExecutors.getValue(operation).doIt(sender, remainingArgs).also { sender.sendMessage(it.message) }
+            }
+            return true
+        } else if (isP || !executors.containsKey(operation) || !managers.contains(sender.name)) {
+            sender.sendMessage("${ChatColor.RED}unknown command '$operation'")
             return true
         }
 
-        val merger = (executors["merge"] as MergeExecutor)
-        val joinedArgs = args.joinToString(" ")
-
-        if (joinedArgs == "merge abort" && merger.state > 0) {
-            job?.cancel()
-            Executor.sendTitle(" ")
-            return true
-        } else if (joinedArgs == "merge abort" && merger.state < 0) {
-            when (merger.state) {
-                MergeExecutor.IDLE -> sender.sendMessage(ChatColor.RED + "merger is not merging any commits")
-                MergeExecutor.APPLYING_LIGHTS -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while updating lights of world")
-                MergeExecutor.RELOADING_WORLDS -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while world is loading")
-                MergeExecutor.COMMITTING -> sender.sendMessage(ChatColor.RED + "cannot abort merge operation while committing merged data into local repository")
+        if (args.joinToString(" ") == "merge abort") {
+            CoroutineScope(Dispatchers.IO).launch {
+                executors["merge"]!!.doIt(sender, remainingArgs)
             }
             return true
         }
 
         if (job?.isActive == true) {
-            sender.sendMessage(ChatColor.YELLOW + "other command is running. please wait until previous command finishes...")
+            sender.sendMessage("${ChatColor.YELLOW}other command is running. please wait until previous command finishes...")
             return true
         }
 
         job = CoroutineScope(Dispatchers.IO).launch {
             try {
                 val startTime = System.currentTimeMillis()
-
-                val result = executor.doIt(sender, remainingArgs)
-
+                val result = executors.getValue(operation).doIt(sender, remainingArgs)
                 val endTime = System.currentTimeMillis()
 
                 if (result.success) sender.sendMessage("${result.message}${if (result.recordTime) "${ChatColor.DARK_GRAY}, in ${endTime - startTime}ms" else ""}")
-                else sender.sendMessage(ChatColor.RED + result.message)
+                else sender.sendMessage("${ChatColor.RED}${result.message}")
 
                 Executor.sendTitle(" ")
             } catch (e: Exception) {
@@ -203,11 +187,11 @@ class Entry: JavaPlugin() {
         alias: String,
         args: Array<out String>
     ): MutableList<String>? {
-        if (command.name != "pixel") return super.onTabComplete(sender, command, alias, args)
-
-        val merger = (executors["merge"] as MergeExecutor)
+        if (command.name != Executor.ROOT_NAME) return super.onTabComplete(sender, command, alias, args)
 
         val isJobActive = job?.isActive == true
+
+        val merger = (executors["merge"] as MergeExecutor)
 
         if (args.size == 1) {
             return if (repositories.values.isNotEmpty() && !isJobActive) {
@@ -230,29 +214,5 @@ class Entry: JavaPlugin() {
             executors[args[0]]?.autoComplete(remainingArgs)
         }
     }
-
-    private fun allowPlayerAsManager(playerName: String) {
-        managers = managers.toMutableSet().apply {
-            remove("")
-            add(playerName)
-        }.toSet()
-        saveManagerFile()
-        server.logger.log(Level.INFO, "allowed $playerName as pixel manager")
-    }
-
-    private fun denyPlayerAsManager(playerName: String) {
-        managers = managers.toMutableSet().apply {
-            remove("")
-            remove(playerName)
-        }.toSet()
-        saveManagerFile()
-        server.logger.log(Level.INFO, "denied $playerName from pixel manager")
-    }
-
-    private fun saveManagerFile() {
-        File("$dataFolder/pixel.managers").writeBytes(managers.joinToString("\n").toByteArray())
-    }
-
-    operator fun ChatColor.plus(other: String): String = "" + this + other
 
 }
