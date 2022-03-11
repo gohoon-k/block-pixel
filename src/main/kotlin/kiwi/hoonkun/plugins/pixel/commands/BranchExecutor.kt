@@ -9,16 +9,15 @@ class BranchExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val SECOND_ARGS_LIST = mutableListOf("< new_branch_name >", "-d")
-        val THIRD_ARGS_LIST = mutableListOf("< existing_branch_name >")
+        val SECOND_ARGS_LIST = mutableListOf("-d")
 
         val RESULT_NO_TARGET_BRANCH_TO_DELETE =
             CommandExecuteResult(false, "missing arguments. delete target branch must be specified.")
 
     }
 
-    override val usage: String = "branch [ new_branch_name | \"-d\" ] [ existing_branch_name ]"
-    override val description: String = "creates new branch to given world's repository."
+    override val usage: String = "branch < new_branch | \"-d\" > [ branch_to_delete ]"
+    override val description: String = "creates new branch to given world's repository.\nif \"-d\" is set, 'branch_to_delete' must be specified."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         val targetWorld = args[0]
@@ -45,6 +44,8 @@ class BranchExecutor(parent: Entry): Executor(parent) {
                 return createGitApiFailedResult("delete branch", e)
             }
 
+            parent.branches[args[0]]?.remove(args[2])
+
             return CommandExecuteResult(true, "${g}successfully deleted branch '$w${target}$g'", false)
         }
 
@@ -55,6 +56,9 @@ class BranchExecutor(parent: Entry): Executor(parent) {
                 .setName(target)
                 .setCreateBranch(true)
                 .call()
+
+            parent.branches[args[0]]?.add(args[1])
+            parent.branch[args[0]] = args[1]
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("branch", exception)
         }
@@ -66,7 +70,15 @@ class BranchExecutor(parent: Entry): Executor(parent) {
         return when (args.size) {
             1 -> parent.repositoryKeys
             2 -> SECOND_ARGS_LIST
-            3 -> if (args[1] == "-d") THIRD_ARGS_LIST else ARGS_LIST_EMPTY
+            3 -> {
+                if (args[1] == "-d")
+                    parent.branches[args[0]]
+                        ?.toMutableList()
+                        ?.apply { remove(parent.branch[args[0]]) }
+                            ?: mutableListOf()
+                else
+                    ARGS_LIST_EMPTY
+            }
             else -> ARGS_LIST_EMPTY
         }
     }

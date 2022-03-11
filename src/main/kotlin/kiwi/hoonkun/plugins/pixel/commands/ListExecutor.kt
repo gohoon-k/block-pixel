@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import kiwi.hoonkun.plugins.pixel.utils.BranchUtils.Companion.findIndexes
 import kiwi.hoonkun.plugins.pixel.utils.TextWidthUtils.Companion.ellipsizeChat
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
@@ -15,7 +16,6 @@ class ListExecutor(parent: Entry): Executor(parent) {
     companion object {
 
         val FIRST_ARGS_LIST = mutableListOf("commits", "branches")
-        val SECOND_ARGS_LIST = mutableListOf("< page >")
 
         val RESULT_NO_TARGET_WORLD =
             CommandExecuteResult(false, "argument is missing. target world is must be specified.")
@@ -28,7 +28,7 @@ class ListExecutor(parent: Entry): Executor(parent) {
 
     }
 
-    override val usage: String = "list < \"commits\" | \"branches\" > < target_world > [ page ]"
+    override val usage: String = "list < what > < world > [ page ]"
     override val description: String = "list up commits of current branch or branches of given world's repository."
 
     private val pageSize = 9
@@ -101,21 +101,10 @@ class ListExecutor(parent: Entry): Executor(parent) {
         return "$g[total $w${branches.size} ${g}branches]$w\n$list"
     }
 
-    private fun String.findIndexes(char: Char): List<Int> {
-        val result = mutableListOf<Int>()
-        var index = 0
-        split(char).forEach {
-            index += it.length
-            result.add(index)
-        }
-        return result
-    }
-
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> FIRST_ARGS_LIST
             2 -> parent.repositoryKeys
-            3 -> if (args[0] == "commits") SECOND_ARGS_LIST else ARGS_LIST_EMPTY
             else -> ARGS_LIST_EMPTY
         }
     }

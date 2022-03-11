@@ -11,8 +11,6 @@ class ResetExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val SECOND_ARGS_LIST = mutableListOf("< commit_hash | reset_steps >")
-
         val RESULT_NO_TARGET =
             CommandExecuteResult(false, "argument is missing. steps or commit hash must be specified.")
 
@@ -21,7 +19,7 @@ class ResetExecutor(parent: Entry): Executor(parent) {
 
     }
 
-    override val usage: String = "reset < target_world > < commit_hash | reset_steps >"
+    override val usage: String = "reset < world > < commit | steps >"
     override val description: String = "reset given world to specified commit or N steps backward commit"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -54,7 +52,6 @@ class ResetExecutor(parent: Entry): Executor(parent) {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> parent.repositoryKeys
-            2 -> SECOND_ARGS_LIST
             else -> ARGS_LIST_EMPTY
         }
     }

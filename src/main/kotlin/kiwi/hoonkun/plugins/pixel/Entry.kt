@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.chunk.generator.VoidChunkGenerator
 import kiwi.hoonkun.plugins.pixel.commands.*
 import kiwi.hoonkun.plugins.pixel.listener.PlayerPortalListener
 import kiwi.hoonkun.plugins.pixel.listener.PlayerSpawnListener
+import kiwi.hoonkun.plugins.pixel.utils.BranchUtils
 import kotlinx.coroutines.*
 import org.bukkit.*
 import org.bukkit.command.Command
@@ -50,7 +51,9 @@ class Entry: JavaPlugin() {
 
     lateinit var managers: Set<String>
 
-    lateinit var repositories: MutableMap<String, Repository?>
+    lateinit var repositories: MutableMap<String, Repository>
+    lateinit var branches: MutableMap<String, MutableList<String>>
+    lateinit var branch: MutableMap<String, String>
 
     val repositoryKeys get() = repositories.keys.toMutableList()
     val availableWorldNames get() = server.worlds.map { it.name }.filter { it != VOID_WORLD_NAME && it != levelName }.toMutableList()
@@ -107,6 +110,16 @@ class Entry: JavaPlugin() {
             .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
             .filter { it.exists() }
             .associate { it.absoluteFile.parentFile.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
+            .toMutableMap()
+
+        branches = repositories
+            .map { (key, value) -> key to BranchUtils.get(value) }
+            .toMap()
+            .toMutableMap()
+
+        branch = repositories
+            .map { (key, value) -> key to value.branch }
+            .toMap()
             .toMutableMap()
 
         server.pluginManager.registerEvents(PlayerPortalListener(this), this)

@@ -10,7 +10,7 @@ class DiscardExecutor(parent: Entry): Executor(parent) {
         val RESULT_SUCCESSFUL = CommandExecuteResult(true, "${g}successfully discard uncommitted changes")
     }
 
-    override val usage: String = "discard < target_world >"
+    override val usage: String = "discard < world >"
     override val description: String = "discards all uncommitted changes of given world."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {

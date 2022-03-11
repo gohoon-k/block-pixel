@@ -8,10 +8,10 @@ import java.io.File
 class InitializeExecutor(parent: Entry): Executor(parent) {
 
     companion object {
-        val SECOND_ARGS_LIST = mutableListOf("[ force ]")
+        val SECOND_ARGS_LIST = mutableListOf("true")
     }
 
-    override val usage: String = "init < target_world > [ force ]"
+    override val usage: String = "init < world > [ force ]"
     override val description: String = "initializes new repository of given world"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {

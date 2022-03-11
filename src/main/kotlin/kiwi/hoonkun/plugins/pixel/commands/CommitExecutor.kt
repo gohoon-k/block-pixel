@@ -11,8 +11,6 @@ class CommitExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val THIRD_ARGS_LIST = mutableListOf("< commit_message >")
-
         val RESULT_NO_COMMIT_MESSAGE =
             CommandExecuteResult(false, "missing arguments. commit message must be specified.")
 
@@ -20,7 +18,7 @@ class CommitExecutor(parent: Entry): Executor(parent) {
 
     }
 
-    override val usage: String = "commit < target_world > < commit_message >"
+    override val usage: String = "commit < world > < commit_message >"
     override val description: String = "creates new commit to given world's repository, in current branch."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -95,9 +93,8 @@ class CommitExecutor(parent: Entry): Executor(parent) {
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
-        return when {
-            args.size == 1 -> parent.repositoryKeys.apply { add("all") }
-            args.size > 1 -> THIRD_ARGS_LIST
+        return when (args.size) {
+            1 -> parent.repositoryKeys.apply { add("all") }
             else -> ARGS_LIST_EMPTY
         }
     }

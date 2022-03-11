@@ -22,7 +22,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         val FIRST_ARGS_LIST_WHEN_MERGING = mutableListOf("abort")
 
-        val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >")
+        val SECOND_ARGS_LIST = mutableListOf<String>()
         val THIRD_ARGS_LIST = mutableListOf("keep", "replace")
 
         const val IDLE = -1
@@ -72,7 +72,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
     var state = IDLE
 
-    override val usage: String = "merge < target_world > < branch_name | commit_hash > < \"keep\" | \"replace\" > < commit_confirm >"
+    override val usage: String = "merge < world > < branch | commit > < mode > < committed >"
     override val description: String = "merge another branch into current branch using specified merge mode"
 
     private var initialBranch: String? = null
@@ -173,7 +173,15 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         }
         return when (args.size) {
             1 -> parent.repositoryKeys
-            2 -> SECOND_ARGS_LIST
+            2 -> {
+                SECOND_ARGS_LIST.toMutableList()
+                    .apply {
+                        addAll(parent.branches[args[0]]
+                            ?.toMutableList()
+                            ?.apply { remove(parent.branch[args[0]]) }
+                                ?: mutableListOf())
+                    }
+            }
             3 -> THIRD_ARGS_LIST
             4 -> ARGS_LIST_COMMIT_CONFIRM
             else -> ARGS_LIST_EMPTY

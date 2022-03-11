@@ -11,14 +11,14 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val SECOND_ARGS_LIST = mutableListOf("< branch_name | commit_hash >", "-recover")
+        val SECOND_ARGS_LIST = mutableListOf("-recover")
 
         val RESULT_NO_CHECKOUT_TARGET =
             CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
 
     }
 
-    override val usage: String = "checkout checkout < branch_name | commit_hash > < commit_confirm >"
+    override val usage: String = "checkout < branch | commit > < world > < committed >"
     override val description: String = "checkout to given branch or commit with specified world's repository"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -53,6 +53,8 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
+            parent.branch[args[0]] = repo.branch
+
             IOWorker.replaceFromVersionControl(parent, targets)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("checkout", exception)
@@ -66,7 +68,15 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
     override fun autoComplete(args: List<String>): MutableList<String> {
         return when (args.size) {
             1 -> parent.repositoryKeys
-            2 -> SECOND_ARGS_LIST
+            2 -> {
+                SECOND_ARGS_LIST.toMutableList()
+                    .apply {
+                        addAll(parent.branches[args[0]]
+                            ?.toMutableList()
+                            ?.apply { remove(parent.branch[args[0]]) }
+                                ?: mutableListOf())
+                    }
+            }
             3 -> if (args[1] != "-recover") ARGS_LIST_COMMIT_CONFIRM else ARGS_LIST_EMPTY
             else -> ARGS_LIST_EMPTY
         }

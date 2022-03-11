@@ -31,6 +31,7 @@ abstract class Executor(val parent: Entry) {
         val g = ChatColor.GRAY
         val w = ChatColor.WHITE
         val r = ChatColor.RED
+        val y = ChatColor.YELLOW
 
         val RESULT_NO_COMMIT_CONFIRM =
             CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before checkout.\nif yes, pass 'true' to last argument.")
@@ -56,7 +57,7 @@ abstract class Executor(val parent: Entry) {
 
     private val commandRoot: String = "/$ROOT_NAME "
 
-    private val help: String get() = "$w$commandRoot${usage.ellipsizeChat()}\n$g$description"
+    private val help: String get() = "$y${"$commandRoot$usage".ellipsizeChat()}\n$g$description"
 
     fun createGitApiFailedResult(operation: String, exception: GitAPIException): CommandExecuteResult =
         CommandExecuteResult(false, "failed to $operation because of exception\n${exception.message}")
@@ -83,7 +84,7 @@ abstract class Executor(val parent: Entry) {
     suspend fun doIt(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         globalSender = sender
 
-        if (args.isEmpty()) return CommandExecuteResult(true, help)
+        if (args.isEmpty()) return CommandExecuteResult(true, help, recordTime = false)
 
         val result = exec(sender, args)
 
