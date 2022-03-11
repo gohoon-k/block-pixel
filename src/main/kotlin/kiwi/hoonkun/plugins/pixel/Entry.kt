@@ -113,6 +113,8 @@ class Entry: JavaPlugin() {
     override fun onDisable() {
         super.onDisable()
 
+        job?.cancel()
+
         logger.log(Level.INFO, "pixel.minecraft-git plugin is disabled.")
     }
 
