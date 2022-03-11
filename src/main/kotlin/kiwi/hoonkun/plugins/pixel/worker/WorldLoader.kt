@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.commands.Executor
 import kotlinx.coroutines.delay
 import org.bukkit.*
+import org.bukkit.plugin.java.JavaPlugin
 
 class WorldLoader {
 
@@ -71,13 +72,13 @@ class WorldLoader {
 
         private val lightSources = mutableListOf<Triple<Int, Int, Int>>()
 
-        private fun getWorld(plugin: Entry, worldName: String): World = plugin.server.getWorld(worldName)!!
+        private fun getWorld(plugin: JavaPlugin, worldName: String): World = plugin.server.getWorld(worldName)!!
 
-        suspend fun unload(plugin: Entry, worldName: String) {
+        suspend fun unload(plugin: JavaPlugin, worldName: String) {
             unload(plugin, getWorld(plugin, worldName))
         }
 
-        private suspend fun unload(plugin: Entry, world: World) {
+        private suspend fun unload(plugin: JavaPlugin, world: World) {
             var unloaded = false
 
             environments[world.name] = world.environment
@@ -91,7 +92,7 @@ class WorldLoader {
             while (!unloaded) { delay(100) }
         }
 
-        suspend fun load(plugin: Entry, worldName: String) {
+        suspend fun load(plugin: JavaPlugin, worldName: String) {
             var worldLoaded = false
             var waitTime = 0L
 
@@ -123,11 +124,11 @@ class WorldLoader {
             Executor.sendTitle(" ")
         }
 
-        suspend fun updateLights(plugin: Entry, worldName: String) {
+        suspend fun updateLights(plugin: JavaPlugin, worldName: String) {
             updateLights(plugin, getWorld(plugin, worldName))
         }
 
-        private suspend fun updateLights(plugin: Entry, world: World) {
+        private suspend fun updateLights(plugin: JavaPlugin, world: World) {
             var complete = false
 
             plugin.server.scheduler.runTask(plugin, Runnable {
@@ -148,30 +149,30 @@ class WorldLoader {
             while (!complete) { delay(100) }
         }
 
-        fun movePlayersTo(plugin: Entry, worldName: String) {
+        fun movePlayersTo(plugin: JavaPlugin, worldName: String) {
             movePlayersTo(plugin, getWorld(plugin, worldName))
         }
 
-        private fun movePlayersTo(plugin: Entry, world: World) {
+        private fun movePlayersTo(plugin: JavaPlugin, world: World) {
             val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
                     it.setGravity(false)
-                    it.teleport(Location(plugin.void, it.location.x, it.location.y + 0.5, it.location.z))
+                    it.teleport(Location(void, it.location.x, it.location.y + 0.5, it.location.z))
                 }
             })
         }
 
-        fun returnPlayersTo(plugin: Entry, worldName: String) {
+        fun returnPlayersTo(plugin: JavaPlugin, worldName: String) {
             returnPlayersTo(plugin, getWorld(plugin, worldName))
         }
 
-        private fun returnPlayersTo(plugin: Entry, world: World) {
+        private fun returnPlayersTo(plugin: JavaPlugin, world: World) {
             val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
 
             plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
+                plugin.server.onlinePlayers.filter { it.world.uid == void?.uid }.forEach {
                     it.teleport(Location(world, it.location.x, it.location.y, it.location.z))
                     it.setGravity(true)
                 }
