@@ -45,79 +45,64 @@ class Entry: JavaPlugin() {
 
     private lateinit var managers: Set<String>
 
-    lateinit var repositories: MutableMap<String, Repository>
+    lateinit var repositories: MutableMap<String, Repository?>
 
     val repositoryKeys get() = repositories.keys.toMutableList()
-    val availableWorldNames get() = server.worlds.filter { it.name != VOID_WORLD_NAME && it.name != levelName }.map { it.name }.toMutableList()
+    val availableWorldNames get() = server.worlds.map { it.name }.filter { it != VOID_WORLD_NAME && it != levelName }.toMutableList()
 
     override fun onEnable() {
         super.onEnable()
 
-        val dataFolderPath = dataFolder.absolutePath
-        val dataFolderFile = File(dataFolderPath)
+        if (!dataFolder.exists()) dataFolder.mkdirs()
 
-        if (!dataFolderFile.exists()) dataFolderFile.mkdirs()
+        versionedFolder = File("${dataFolder.absolutePath}/repositories")
+        clientFolder = dataFolder.parentFile.parentFile
 
-        versionedFolder = File("$dataFolderPath/repositories")
-        clientFolder = File(dataFolderPath).parentFile.parentFile
+        managers = File("${dataFolder.absolutePath}/pixel.managers")
+            .apply { if (!exists()) createNewFile() }
+            .let { String(it.readBytes()).split("\n").toSet() }
 
-        val managerFile = File("$dataFolder/pixel.managers")
-        if (!managerFile.exists())
-            managerFile.createNewFile()
-
-        managers = String(managerFile.readBytes()).split("\n").toSet()
-
-        val properties = String(File("${clientFolder.absolutePath}/server.properties").readBytes())
-        levelName = properties.split("\n")
+        levelName = File("${clientFolder.absolutePath}/server.properties")
+            .readBytes()
+            .let { String(it) }
+            .split("\n")
             .map { it.split("=") }
-            .associate { Pair(it[0], if (it.size == 1) null else it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
+            .associate { it[0] to if (it.size == 1) null else it[1] }["level-name"]
+                ?: throw Exception("no 'level-name' property found in server.properties")
 
-        val void = if (File("${clientFolder.absolutePath}/$VOID_WORLD_NAME").exists()) {
-            logger.log(Level.INFO, "creating void world from existing file")
-            server.createWorld(WorldCreator(VOID_WORLD_NAME)) ?: throw Exception("cannot create void world")
-        } else {
-            logger.log(Level.INFO, "creating new void world")
-            WorldCreator(VOID_WORLD_NAME)
-                .generator(VoidChunkGenerator())
-                .environment(World.Environment.NORMAL)
-                .type(WorldType.FLAT)
-                .createWorld() ?: throw Exception("cannot create void world")
-        }
+        File("${clientFolder.absolutePath}/${levelName}_overworld").let { overworld ->
+            if (overworld.exists()) return@let
+            overworld.mkdirs()
 
-        void.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false)
-        void.time = 13000L
-
-        val overworldFolder = File("${clientFolder.absolutePath}/${levelName}_overworld")
-        if (!overworldFolder.exists()) {
-            overworldFolder.mkdirs()
-            val dummyFiles = File("${clientFolder.absolutePath}/$levelName").listFiles()?.toMutableList() ?: throw Exception("main world not exists")
-            val excludedFolders = arrayOf("advancements", "datapacks", "playerdata", "stats", "session.lock", "uid.dat")
-            dummyFiles.removeIf { excludedFolders.contains(it.name) }
-            dummyFiles.forEach {
-                if (it.isDirectory) it.copyRecursively(File("${overworldFolder.absolutePath}/${it.name}"))
-                else it.copyTo(File("${overworldFolder.absolutePath}/${it.name}"))
-            }
-        }
-
-        server.createWorld(WorldCreator("${levelName}_overworld")) ?: throw Exception("cannot create overworld")
-
-        repositories = mutableMapOf<String, Repository>()
-            .apply {
-                server.worlds.map { it.name }.forEach {
-                    val gitDir = File("${versionedFolder.absolutePath}/$it/.git")
-                    if (!gitDir.exists()) return@forEach
-
-                    val builder = FileRepositoryBuilder()
-                    builder.gitDir = gitDir
-
-                    set(it, builder.build())
+            val excluded = arrayOf("advancements", "datapacks", "playerdata", "stats", "session.lock", "uid.dat")
+            File("${clientFolder.absolutePath}/$levelName").listFiles()!!
+                .filter { !excluded.contains(it.name) }
+                .forEach {
+                    val dest = File("${overworld.absolutePath}/${it.name}")
+                    if (it.isDirectory) it.copyRecursively(dest)
+                    else it.copyTo(dest)
                 }
-            }
-
-        server.onlinePlayers.forEach {
-            it.setGravity(true)
-            it.teleport(Location(server.getWorld(levelName)!!, it.location.x, it.location.y, it.location.z))
         }
+
+        WorldCreator("${levelName}_overworld").createWorld()
+            ?: throw Exception("cannot create overworld")
+
+        WorldCreator(VOID_WORLD_NAME)
+            .generator(VoidChunkGenerator())
+            .environment(World.Environment.NORMAL)
+            .type(WorldType.FLAT)
+            .createWorld()
+            ?.apply {
+                setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false)
+                time = 13000L
+            }
+            ?: throw Exception("cannot create void world")
+
+        repositories = server.worlds
+            .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
+            .filter { it.exists() }
+            .associate { it.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
+            .toMutableMap()
 
         server.pluginManager.registerEvents(PlayerPortalListener(this), this)
         server.pluginManager.registerEvents(PlayerSpawnListener(this), this)
