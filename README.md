@@ -108,20 +108,20 @@
 ### 새로운 백업지점 만들기
 - ```/pixel commit <world> <commit_message>```  
   현재 평행세계의 새로운 백업지점을 만듭니다.
-   - dimension : 백업지점을 만들 월드
+   - world : 백업지점을 만들 월드
    - commit_message : 백업지점에 붙힐 메시지 (예시: "집을 지었음")
 
 ### 시간 되돌리기
 - ```/pixel reset <world> <steps|commit_hash>```  
   시간을 **뒤로 되돌립니다**. 타겟 지점보다 뒤에 이루어진 모든 변경사항이 삭제됩니다.
-   - dimension : 되감기를 반영할 월드
+   - world : 되감기를 반영할 월드
    - steps : 뒤로 몇 백업지점을 되감아 지울지에 대한 값 (예시: 마지막 백업지점의 바로 이전 백업지점으로 되감으려면 1)
    - commit_hash : 되감기하여 돌아갈 백업지점의 고유 해시
 
 
 - ```/pixel discard <world>```  
   마지막 백업지점으로 월드를 되감기합니다.
-   - dimension : 변경사항을 취소할 월드
+   - world : 변경사항을 취소할 월드
 
 ### 새로운 평행세계 만들기
 - ```/pixel branch <new_branch_name|-d> [branch_to_delete]```  
@@ -134,7 +134,7 @@
 - ```/pixel checkout <world> <branch|commit_hash> <commit_confirm>```  
   특정 백업지점, 혹은 평행세계 사이를 **이동**합니다.  
   타겟 이후의 변경사항이 삭제되지 않습니다.
-   - dimension : 시간이동 이후의 상황을 반영할 월드
+   - world : 시간이동 이후의 상황을 반영할 월드
    - branch : 시간이동으로 이동할 타겟 브랜치
    - commit_hash : 시간이동으로 이동할 타겟 백업지점
    - commit_confirm : 시간이동하기 전에 현재까지의 변경사항에 대한 백업지점을 만들었는지에 대한 확인
@@ -146,7 +146,7 @@
 ### 평행세계 합치기
 - ```/pixel merge <world> <branch|commit_hash> <merge_mode> <commit_confirm>```  
   두 평행세계를 합칩니다. **위험한 기능이므로 사용에 주의해주십시오**
-   - dimension : 병합을 진행할 월드
+   - world : 병합을 진행할 월드
    - branch : 병합을 진행할 source 평행세계. (A를 B에 병합한다고 할 때 A를 말함)
    - commit_hash : 병합을 진행할 source 백업지점. (A를 B에 병합한다고 할 때 A를 말함)
    - merge_mode : keep 혹은 replace 중 하나. keep 일 경우 병합 충돌 발생 시 현재 평행세계의 값을, replace 일 경우 source 평행세계의 값을 반영합니다.
@@ -163,11 +163,11 @@
    - page : what 인수가 commits 였을 경우 유효한 인수. 커밋 목록의 여러 페이지 중 몇 페이지를 보여줄지 정합니다.
 
 ### 기타 편의기능
-- ```/pixel tp <target> <dimension>```  
+- ```/pixel tp <target> <world>```  
   플레이어를 지정한 월드의 동일한 좌표 위치로 텔레포트합니다.  
   사용 중 뭔가 문제가 생겨 공허 세계에 남겨졌거나, 어떠한 이유로 버전관리가 되지 않는 기존의 월드로 돌아가려면 사용합니다.
    - target : 텔레포트할 플레이어의 닉네임
-   - dimension : 도착 월드. dummy(기존의 Overworld(<b><i>level_name</i></b> 월드)) 혹은 overworld(버전관리가 진행되는 Overworld(<b><i>level_name</i>_overworld</b> 월드)) 중 하나.
+   - world : 도착 월드. dummy(기존의 Overworld(<b><i>level_name</i></b> 월드)) 혹은 overworld(버전관리가 진행되는 Overworld(<b><i>level_name</i>_overworld</b> 월드)) 중 하나.
 
 
 - ```/pixel whereis <target>```  
