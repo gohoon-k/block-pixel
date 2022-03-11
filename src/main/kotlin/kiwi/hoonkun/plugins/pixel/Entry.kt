@@ -19,13 +19,12 @@ class Entry: JavaPlugin() {
 
     companion object {
 
-        lateinit var dataFolder: File
-
-        lateinit var logFolder: File
         lateinit var versionedFolder: File
         lateinit var clientFolder: File
 
         lateinit var levelName: String
+
+        const val VOID_WORLD_NAME = "__void__"
 
     }
 
@@ -42,8 +41,6 @@ class Entry: JavaPlugin() {
         "whereis" to WhereIsExecutor(this)
     )
 
-    lateinit var void: World
-
     private lateinit var job: CompletableJob
 
     private var scopeRunning = false
@@ -53,7 +50,7 @@ class Entry: JavaPlugin() {
     lateinit var repositories: MutableMap<String, Repository>
 
     val repositoryKeys get() = repositories.keys.toMutableList()
-    val availableWorldNames get() = server.worlds.filter { it.name != "__void__" && it.name != levelName }.map { it.name }.toMutableList()
+    val availableWorldNames get() = server.worlds.filter { it.name != VOID_WORLD_NAME && it.name != levelName }.map { it.name }.toMutableList()
 
     override fun onEnable() {
         super.onEnable()
@@ -63,8 +60,6 @@ class Entry: JavaPlugin() {
 
         if (!dataFolderFile.exists()) dataFolderFile.mkdirs()
 
-        Entry.dataFolder = dataFolder
-        logFolder = File("$dataFolderPath/logs")
         versionedFolder = File("$dataFolderPath/repositories")
         clientFolder = File(dataFolderPath).parentFile.parentFile
 
@@ -79,12 +74,12 @@ class Entry: JavaPlugin() {
             .map { it.split("=") }
             .associate { Pair(it[0], if (it.size == 1) null else it[1]) }["level-name"] ?: throw Exception("no 'level-name' property found in server.properties!!")
 
-        void = if (File("${clientFolder.absolutePath}/__void__").exists()) {
+        val void = if (File("${clientFolder.absolutePath}/$VOID_WORLD_NAME").exists()) {
             logger.log(Level.INFO, "creating void world from existing file")
-            server.createWorld(WorldCreator("__void__")) ?: throw Exception("cannot create void world")
+            server.createWorld(WorldCreator(VOID_WORLD_NAME)) ?: throw Exception("cannot create void world")
         } else {
             logger.log(Level.INFO, "creating new void world")
-            WorldCreator("__void__")
+            WorldCreator(VOID_WORLD_NAME)
                 .generator(VoidChunkGenerator())
                 .environment(World.Environment.NORMAL)
                 .type(WorldType.FLAT)

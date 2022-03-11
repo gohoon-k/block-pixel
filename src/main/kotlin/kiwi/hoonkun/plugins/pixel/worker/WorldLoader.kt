@@ -153,6 +153,8 @@ class WorldLoader {
         }
 
         private fun movePlayersTo(plugin: Entry, world: World) {
+            val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
+
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
                     it.setGravity(false)
@@ -166,6 +168,8 @@ class WorldLoader {
         }
 
         private fun returnPlayersTo(plugin: Entry, world: World) {
+            val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
+
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == plugin.void.uid }.forEach {
                     it.teleport(Location(world, it.location.x, it.location.y, it.location.z))

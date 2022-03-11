@@ -16,10 +16,11 @@ class LocationUtils {
             applier: (Location) -> Unit
         ) {
             val overworld = plugin.server.getWorld("${Entry.levelName}_overworld")
+            val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
 
             if (!original.isWorldLoaded || (original.world?.name == Entry.levelName && overworld == null)) {
                 player.sendMessage(message)
-                applier.invoke(Location(plugin.void, original.x, original.y, original.z))
+                applier.invoke(Location(void, original.x, original.y, original.z))
                 player.setGravity(false)
             } else {
                 if (original.world?.name == Entry.levelName && overworld != null)

@@ -25,7 +25,7 @@ class PlayerPortalListener(private val plugin: Entry): Listener {
             to,
             "world which you are trying to enter is unloaded by pixel command.\nplease wait until command finishes."
         ) {
-            if (it.world?.name == "__void__") event.isCancelled = true
+            if (it.world?.name == Entry.VOID_WORLD_NAME) event.isCancelled = true
             else event.setTo(it)
         }
 
