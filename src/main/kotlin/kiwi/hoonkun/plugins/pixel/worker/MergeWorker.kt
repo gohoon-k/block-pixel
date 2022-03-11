@@ -118,13 +118,13 @@ class MergeWorker {
 
             allMergedEntities.forEach { entityEach ->
                 val nbtLocation = ChunkLocation(
-                    floor(entityEach.pos[0] / 16).toInt(),
-                    floor(entityEach.pos[2] / 16).toInt()
+                    floor(entityEach.pos[0] / 16.0).toInt(),
+                    floor(entityEach.pos[2] / 16.0).toInt()
                 )
 
                 val anvilLocation = AnvilLocation(
-                    floor(entityEach.pos[0] / 32.0).toInt(),
-                    floor(entityEach.pos[2] / 32.0).toInt()
+                    floor(entityEach.pos[0] / 16.0 / 32.0).toInt(),
+                    floor(entityEach.pos[2] / 16.0 / 32.0).toInt()
                 )
 
                 if (!mergedMutableEntity.containsKey(anvilLocation))
