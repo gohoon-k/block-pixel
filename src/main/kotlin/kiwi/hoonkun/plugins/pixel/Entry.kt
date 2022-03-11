@@ -41,9 +41,7 @@ class Entry: JavaPlugin() {
         "whereis" to WhereIsExecutor(this)
     )
 
-    private lateinit var job: CompletableJob
-
-    private var scopeRunning = false
+    private var job: Job? = null
 
     private lateinit var managers: Set<String>
 
@@ -174,7 +172,7 @@ class Entry: JavaPlugin() {
         val joinedArgs = args.joinToString(" ")
 
         if (joinedArgs == "merge abort" && merger.state > 0) {
-            job.cancel()
+            job?.cancel()
             Executor.sendTitle(" ")
             return true
         } else if (joinedArgs == "merge abort" && merger.state < 0) {
@@ -187,16 +185,12 @@ class Entry: JavaPlugin() {
             return true
         }
 
-        if (scopeRunning) {
+        if (job?.isActive == true) {
             sender.sendMessage(ChatColor.YELLOW + "other command is running. please wait until previous command finishes...")
             return true
         }
 
-        job = Job()
-        val scope = CoroutineScope(job + Dispatchers.IO)
-        scope.launch {
-            scopeRunning = true
-
+        job = CoroutineScope(Dispatchers.IO).launch {
             try {
                 val startTime = System.currentTimeMillis()
 
@@ -210,9 +204,6 @@ class Entry: JavaPlugin() {
                 Executor.sendTitle(" ")
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
-                if (job.isCancelled) job.complete()
-                scopeRunning = false
             }
         }
 
@@ -229,8 +220,10 @@ class Entry: JavaPlugin() {
 
         val merger = (executors["merge"] as MergeExecutor)
 
+        val isJobActive = job?.isActive == true
+
         if (args.size == 1) {
-            return if (repositories.values.isNotEmpty() && !scopeRunning) {
+            return if (repositories.values.isNotEmpty() && !isJobActive) {
                 executors.keys.toMutableList()
             } else if (repositories.values.isNotEmpty()) {
                 if (merger.state > 0) mutableListOf("merge")
@@ -242,9 +235,9 @@ class Entry: JavaPlugin() {
 
         val remainingArgs = args.slice(1 until args.size)
 
-        return if (scopeRunning && merger.state > 0) {
+        return if (isJobActive && merger.state > 0) {
             merger.autoComplete(remainingArgs)
-        } else if (scopeRunning) {
+        } else if (isJobActive) {
             mutableListOf()
         } else {
             executors[args[0]]?.autoComplete(remainingArgs)
