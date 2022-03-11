@@ -60,7 +60,7 @@ class MinecraftAnvilWorker {
 
                     val (timestamp, buffer) = decompress(bytes, i) ?: continue
 
-                    parts.add(generator.invoke(ChunkLocation(x, z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
+                    parts.add(generator.invoke(ChunkLocation(32 * anvilLocation.x + x, 32 * anvilLocation.z + z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
                 }
 
                 result[anvilLocation] = parts
@@ -93,7 +93,7 @@ class MinecraftAnvilWorker {
                 var sector = HEADER_LENGTH / SECTOR_UNIT
 
                 dataList.forEach { data ->
-                    val headerOffset = 4 * ((data.location.x and 31) + (data.location.z and 31) * 32)
+                    val headerOffset = 4 * (((data.location.x - 32 * anvilLocation.x) and 31) + ((data.location.z - 32 * anvilLocation.z) and 31) * 32)
 
                     val compressedNbt = compress(data.nbt)
 

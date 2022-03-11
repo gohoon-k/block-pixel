@@ -63,6 +63,9 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         if (args.size == 1)
             return RESULT_NO_MERGE_SOURCE
 
+        val worldArg = args[0]
+        val sourceArg = args[1]
+
         if (args.size == 2)
             return RESULT_NO_MERGE_MODE
 
@@ -72,12 +75,12 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             else -> return RESULT_INVALID_MERGE_MODE
         }
 
-        if (isValidWorld(args[0]))
-            return createUnknownWorldResult(args[0])
+        if (!isValidWorld(worldArg))
+            return createUnknownWorldResult(worldArg)
 
-        val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+        val repo = parent.repositories[worldArg] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-        if (args.size == 4)
+        if (args.size == 3)
             return RESULT_NO_COMMIT_CONFIRM
 
         if (args[3] != "true")
@@ -88,12 +91,11 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             return RESULT_DETACHED_HEAD
 
         try {
-            val worlds = worlds(args[0])
-            val from = args[1]
+            val worlds = worlds(worldArg)
 
             initialBranch = repo.branch ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-            val message = merge(repo, from, worlds, mode)
+            val message = merge(repo, sourceArg, worlds, mode)
 
             if (message != null) {
                 sendTitle("finished merging, reloading world...")
