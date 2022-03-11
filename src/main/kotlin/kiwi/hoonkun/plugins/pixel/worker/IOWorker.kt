@@ -15,12 +15,8 @@ class IOWorker {
             val worldDir = "${Entry.clientFolder.absolutePath}/$worldName"
             val dimDir = File(worldDir).listFiles()?.find { it.name.contains("DIM") }
 
-            val result = if (dimDir == null) "$worldDir/${anvilType.path}"
+            return if (dimDir == null) "$worldDir/${anvilType.path}"
             else "$worldDir/${dimDir.name}/${anvilType.path}"
-
-            println(result)
-
-            return result
         }
 
         private fun getVersionedPath(anvilType: AnvilType, worldName: String) =
