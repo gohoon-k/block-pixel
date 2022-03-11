@@ -21,7 +21,18 @@ class TextWidthUtils {
             var result = ""
             var width = 0
             var ellipsized = false
+            var isColorValue = false
             for (index in indices) {
+                if (this[index] == '§') {
+                    isColorValue = true
+                    result += this[index]
+                    continue
+                }
+                if (isColorValue) {
+                    isColorValue = false
+                    result += this[index]
+                    continue
+                }
                 width += widths[this[index]] ?: 5
                 width += letterSpacing
                 result += this[index]
