@@ -51,9 +51,9 @@ class Entry: JavaPlugin() {
 
     lateinit var managers: Set<String>
 
-    lateinit var repositories: MutableMap<String, Repository>
-    lateinit var branches: MutableMap<String, MutableList<String>>
-    lateinit var branch: MutableMap<String, String>
+    lateinit var repositories: MutableMap<String, Repository> private set
+    lateinit var branches: MutableMap<String, MutableList<String>> private set
+    lateinit var branch: MutableMap<String, String> private set
 
     val repositoryKeys get() = repositories.keys.toMutableList()
     val availableWorldNames get() = server.worlds.map { it.name }.filter { it != VOID_WORLD_NAME && it != levelName }.toMutableList()
