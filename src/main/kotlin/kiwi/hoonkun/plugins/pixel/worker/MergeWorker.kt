@@ -3,6 +3,7 @@ package kiwi.hoonkun.plugins.pixel.worker
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.commands.Executor
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
+import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater.Companion.isEmittingLights
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
 
@@ -364,12 +365,8 @@ class MergeWorker {
                         applyIt(intoB, intoE)
                     }
 
-                    if (WorldLoader.lightSourceBlocks.contains(appliedBlock.name)) {
-                        val isCaveVines = appliedBlock.name == "minecraft:cave_vines_plant" || appliedBlock.name == "minecraft:cave_vines"
-                        val isCaveVinesWithBerries = isCaveVines && appliedBlock.properties?.get("berries") == "true"
-                        if (isCaveVinesWithBerries || !isCaveVines) {
-                            WorldLoader.registerLightSourceLocation(Triple(x, y, z))
-                        }
+                    if (appliedBlock.isEmittingLights()) {
+                        WorldLightUpdater.addTarget(Triple(x, y, z))
                     }
                 }
                 val resultPS = resultP.toSet().toList()

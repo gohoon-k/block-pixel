@@ -18,59 +18,7 @@ class WorldLoader {
             "Want some breaks? Now is the best timing!"
         )
 
-        val lightSourceBlocks = listOf(
-            "minecraft:beacon",
-            "minecraft:campfire",
-            "minecraft:cauldron",
-            "minecraft:conduit",
-            "minecraft:end_gateway",
-            "minecraft:end_portal",
-            "minecraft:fire",
-            "minecraft:glowstone",
-            "minecraft:jack_o_lantern",
-            "minecraft:lava",
-            "minecraft:lantern",
-            "minecraft:redstone_lamp",
-            "minecraft:respawn_anchor",
-            "minecraft:sea_lantern",
-            "minecraft:sea_pickle",
-            "minecraft:shroomlight",
-            "minecraft:cave_vines",
-            "minecraft:cave_vines_plant",
-            "minecraft:end_rod",
-            "minecraft:torch",
-            "minecraft:blast_furnace",
-            "minecraft:furnace",
-            "minecraft:smoker",
-            "minecraft:candles",
-            "minecraft:nether_portal",
-            "minecraft:crying_obsidian",
-            "minecraft:soul_campfire",
-            "minecraft:soul_fire",
-            "minecraft:soul_lantern",
-            "minecraft:soul_torch",
-            "minecraft:deepslate_redstone_ore",
-            "minecraft:redstone_ore",
-            "minecraft:enchanting_table",
-            "minecraft:ender_chest",
-            "minecraft:glow_lichen",
-            "minecraft:redstone_torch",
-            "minecraft:amethyst_cluster",
-            "minecraft:small_amethyst_bud",
-            "minecraft:medium_amethyst_bud",
-            "minecraft:large_amethyst_bud",
-            "minecraft:magma_block",
-            "minecraft:brewing_stand",
-            "minecraft:brown_mushroom",
-            "minecraft:dragon_egg",
-            "minecraft:end_portal_frame",
-            "minecraft:sculk_sensor",
-            "minecraft:light_block",
-        )
-
         private val environments = mutableMapOf<String, World.Environment>()
-
-        private val lightSources = mutableListOf<Triple<Int, Int, Int>>()
 
         private fun getWorld(plugin: JavaPlugin, worldName: String): World = plugin.server.getWorld(worldName)!!
 
@@ -124,31 +72,6 @@ class WorldLoader {
             Executor.sendTitle(" ")
         }
 
-        suspend fun updateLights(plugin: JavaPlugin, worldName: String) {
-            updateLights(plugin, getWorld(plugin, worldName))
-        }
-
-        private suspend fun updateLights(plugin: JavaPlugin, world: World) {
-            var complete = false
-
-            plugin.server.scheduler.runTask(plugin, Runnable {
-                lightSources.forEachIndexed { index, (x, y, z) ->
-                    Executor.sendTitle("updating light sources [$index/${lightSources.size}]")
-                    val block = world.getBlockAt(x, y, z)
-                    val blockData = block.blockData
-                    val blockState = block.state
-                    world.setBlockData(x, y, z, Material.AIR.createBlockData())
-                    world.setBlockData(x, y, z, blockData)
-                    blockState.update(true, true)
-                }
-                lightSources.clear()
-
-                complete = true
-            })
-
-            while (!complete) { delay(100) }
-        }
-
         fun movePlayersTo(plugin: JavaPlugin, worldName: String) {
             movePlayersTo(plugin, getWorld(plugin, worldName))
         }
@@ -177,10 +100,6 @@ class WorldLoader {
                     it.setGravity(true)
                 }
             })
-        }
-
-        fun registerLightSourceLocation(position: Triple<Int, Int, Int>) {
-            lightSources.add(position)
         }
 
     }

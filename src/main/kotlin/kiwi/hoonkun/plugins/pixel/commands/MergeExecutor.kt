@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toWorldAnvilFormat
+import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
@@ -267,7 +268,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
                 IOWorker.writeWorldAnvilToClient(regions, world)
                 WorldLoader.load(parent, world)
                 state = APPLYING_LIGHTS
-                WorldLoader.updateLights(parent, world)
+                WorldLightUpdater.updateLights(parent, world)
             }
         } catch (exception: CancellationException) {
             state = RELOADING_WORLDS
