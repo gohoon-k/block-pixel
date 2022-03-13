@@ -376,6 +376,7 @@ class MergeWorker {
 
                 resultChunk.sections[sectionIndex].blockStates.data = resultD
                 resultChunk.sections[sectionIndex].blockStates.palette = resultPS
+                resultChunk.sections[sectionIndex].skyLight = null
             }
 
             resultChunk.blockEntities = resultE

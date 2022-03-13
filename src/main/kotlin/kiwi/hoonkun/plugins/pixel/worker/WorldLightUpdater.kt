@@ -114,8 +114,6 @@ class WorldLightUpdater {
         }
 
         suspend fun updateLights(plugin: JavaPlugin, worldName: String) {
-            println(updateTargets.size)
-
             val world = plugin.server.getWorld(worldName) ?: throw Exception("unknown world '$worldName'")
             var complete = false
 

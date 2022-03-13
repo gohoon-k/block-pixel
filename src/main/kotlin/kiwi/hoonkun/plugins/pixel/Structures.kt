@@ -2,6 +2,7 @@ package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
+import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
 
 /** 월드 하나의 모든 ByteArray 타입의 MinecraftAnvil 파일 데이터를 포함하는 데이터 구조 */
 typealias WorldAnvilFormat = Map<AnvilType, AnvilFormat>
@@ -17,6 +18,10 @@ typealias MutableAnvil<T/* :ChunkData */> = MutableMap<AnvilLocation, MutableLis
 typealias PackedBlocks = LongArray
 /** unpacked 된 블럭 데이터. 일반적으로 그 길이는 4096이다. */
 typealias Blocks = List<Int>
+
+/** Packed 된 SkyLight 데이터 */
+typealias PackedSkyLight = ByteArray
+typealias SkyLight = List<Byte>
 
 /** Anvil 의 위치. 파일이름에 포함되는 그것이다. 예를 들어 r.-1.0.mca 일 경우 x는 -1, z는 0이 된다. */
 data class AnvilLocation(val x: Int, val z: Int)
@@ -66,6 +71,11 @@ data class Section(private val nbt: CompoundTag) {
         return yTag!!.getAs<ByteTag>().value
     }
     val blockStates = BlockStates(nbt["block_states"]!!.getAs())
+    var skyLight: SkyLight?
+        get() = nbt["SkyLight"]?.getAs<ByteArrayTag>()?.value?.unpack()
+        set(value) {
+            if (value == null) nbt.value.remove("SkyLight")
+        }
 }
 
 data class BlockStates(private val nbt: CompoundTag) {

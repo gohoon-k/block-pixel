@@ -2,12 +2,17 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.Blocks
 import kiwi.hoonkun.plugins.pixel.PackedBlocks
+import kiwi.hoonkun.plugins.pixel.PackedSkyLight
+import kiwi.hoonkun.plugins.pixel.SkyLight
+import kotlin.experimental.and
 import kotlin.math.ceil
 import kotlin.math.pow
 
 class ArrayPacker {
 
     companion object {
+
+        private val FOUR_BIT_MASK = ((2.0).pow(4).toInt() - 1).toByte()
 
         fun PackedBlocks.unpack(paletteSize: Int): Blocks {
             val bitsPerBlock = size(paletteSize)
@@ -46,6 +51,20 @@ class ArrayPacker {
 
                 long
             }
+        }
+
+        fun PackedSkyLight.unpack(): SkyLight {
+            val result = mutableListOf<Byte>()
+
+            forEach { byte ->
+                var remaining = byte
+                for (block in 0 until 2) {
+                    result.add(remaining and FOUR_BIT_MASK)
+                    remaining = (remaining.toInt() shr 4).toByte()
+                }
+            }
+
+            return result
         }
 
         private fun size(size: Int): Int {
