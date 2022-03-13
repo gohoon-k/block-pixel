@@ -20,11 +20,11 @@ class LocationUtils {
 
             if (!original.isWorldLoaded || (original.world?.name == Entry.levelName && overworld == null)) {
                 player.sendMessage(message)
-                applier.invoke(Location(void, original.x, original.y, original.z))
+                applier.invoke(Location(void, original.x, original.y, original.z, original.yaw, original.pitch))
                 player.setGravity(false)
             } else {
                 if (original.world?.name == Entry.levelName && overworld != null)
-                    applier.invoke(Location(overworld, original.x, original.y, original.z))
+                    applier.invoke(Location(overworld, original.x, original.y, original.z, original.yaw, original.pitch))
                 else
                     applier.invoke(original)
             }

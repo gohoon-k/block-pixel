@@ -34,11 +34,25 @@ class TeleportExecutor(parent: Entry): Executor(parent) {
 
         parent.server.scheduler.runTask(parent, Runnable {
             when (destination) {
-                "dummy" -> target.teleport(Location(parent.server.getWorld(Entry.levelName), target.location.x, target.location.y, target.location.z))
+                "dummy" -> target.teleport(Location(
+                    parent.server.getWorld(Entry.levelName),
+                    target.location.x,
+                    target.location.y,
+                    target.location.z,
+                    target.location.yaw,
+                    target.location.pitch
+                ))
                 "overworld" -> {
                     parent.server.getWorld("${Entry.levelName}_overworld").also {
                         if (it == null) sender?.sendMessage("${r}overworld is unloaded by pixel command now.\nplease wait until pixel command finishes.")
-                        else target.teleport(Location(it, target.location.x, target.location.y, target.location.z))
+                        else target.teleport(Location(
+                            it,
+                            target.location.x,
+                            target.location.y,
+                            target.location.z,
+                            target.location.yaw,
+                            target.location.pitch
+                        ))
                     }
                 }
             }

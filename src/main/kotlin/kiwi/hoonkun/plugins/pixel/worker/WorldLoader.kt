@@ -159,7 +159,7 @@ class WorldLoader {
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
                     it.setGravity(false)
-                    it.teleport(Location(void, it.location.x, it.location.y + 0.5, it.location.z))
+                    it.teleport(Location(void, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
                 }
             })
         }
@@ -173,7 +173,7 @@ class WorldLoader {
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == void?.uid }.forEach {
-                    it.teleport(Location(world, it.location.x, it.location.y, it.location.z))
+                    it.teleport(Location(world, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
                     it.setGravity(true)
                 }
             })
