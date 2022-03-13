@@ -4,8 +4,8 @@ import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.commands.Executor
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater.Companion.isEmittingLights
-import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
-import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
+import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
+import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
 
 import kotlinx.coroutines.delay
 

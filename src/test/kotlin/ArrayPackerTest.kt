@@ -8,12 +8,12 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.ListTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
-import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.pack
-import kiwi.hoonkun.plugins.pixel.worker.PaletteWorker.Companion.unpack
+import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
+import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
 
 import java.io.File
 
-class PaletteWorkerTest: StringSpec() {
+class ArrayPackerTest: StringSpec() {
 
     init {
 

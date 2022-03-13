@@ -5,7 +5,7 @@ import kiwi.hoonkun.plugins.pixel.PackedBlocks
 import kotlin.math.ceil
 import kotlin.math.pow
 
-class PaletteWorker {
+class ArrayPacker {
 
     companion object {
 
