@@ -85,7 +85,7 @@ data class BlockStates(private val nbt: CompoundTag) {
 
 data class Palette(val nbt: CompoundTag) {
     val name = nbt["Name"]!!.getAs<StringTag>().value
-    private val properties = nbt["Properties"]?.getAs<CompoundTag>()?.value?.map { it.key to it.value.getAs<StringTag>().value }?.toMap()
+    val properties = nbt["Properties"]?.getAs<CompoundTag>()?.value?.map { it.key to it.value.getAs<StringTag>().value }?.toMap()
 
     override fun equals(other: Any?): Boolean {
         return name == (other as? Palette)?.name && properties == (other as? Palette)?.properties

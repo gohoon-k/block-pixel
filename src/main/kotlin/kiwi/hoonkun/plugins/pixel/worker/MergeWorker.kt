@@ -365,7 +365,11 @@ class MergeWorker {
                     }
 
                     if (WorldLoader.lightSourceBlocks.contains(appliedBlock.name)) {
-                        WorldLoader.registerLightSourceLocation(Triple(x, y, z))
+                        val isCaveVines = appliedBlock.name == "minecraft:cave_vines_plant" || appliedBlock.name == "minecraft:cave_vines"
+                        val isCaveVinesWithBerries = isCaveVines && appliedBlock.properties?.get("berries") == "true"
+                        if (isCaveVinesWithBerries || !isCaveVines) {
+                            WorldLoader.registerLightSourceLocation(Triple(x, y, z))
+                        }
                     }
                 }
                 val resultPS = resultP.toSet().toList()
