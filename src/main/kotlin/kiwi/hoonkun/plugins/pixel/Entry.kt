@@ -171,13 +171,16 @@ class Entry: JavaPlugin() {
 
         if (args.joinToString(" ") == "merge abort") {
             CoroutineScope(Dispatchers.IO).launch {
-                executors["merge"]!!.doIt(sender, remainingArgs)
+                val result = executors["merge"]!!.doIt(sender, remainingArgs)
+                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message)
             }
             return true
         }
 
         if (job?.isActive == true) {
-            sender.sendMessage("${ChatColor.YELLOW}other command is running. please wait until previous command finishes...")
+            val message = "other command is running. please wait until previous command finishes..."
+            sender.sendMessage("${ChatColor.YELLOW}$message")
+            server.logger.log(Level.WARNING, message)
             return true
         }
 
@@ -189,6 +192,8 @@ class Entry: JavaPlugin() {
 
                 if (result.success) sender.sendMessage("${result.message}${if (result.recordTime) "${ChatColor.DARK_GRAY}, in ${endTime - startTime}ms" else ""}")
                 else sender.sendMessage("${ChatColor.RED}${result.message}")
+
+                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message)
 
                 Executor.sendTitle(" ")
             } catch (e: Exception) {
