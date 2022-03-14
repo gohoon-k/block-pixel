@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.utils.TextWidthUtils.Companion.ellipsizeChat
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.ellipsizeChat
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.ChatColor

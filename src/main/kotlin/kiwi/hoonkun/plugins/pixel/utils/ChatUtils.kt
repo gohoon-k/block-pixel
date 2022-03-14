@@ -2,7 +2,7 @@ package kiwi.hoonkun.plugins.pixel.utils
 
 import org.bukkit.ChatColor
 
-class TextWidthUtils {
+class ChatUtils {
 
     companion object {
 

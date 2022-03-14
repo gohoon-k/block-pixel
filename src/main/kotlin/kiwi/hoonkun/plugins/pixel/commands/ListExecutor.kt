@@ -2,7 +2,7 @@ package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.utils.BranchUtils.Companion.findIndexes
-import kiwi.hoonkun.plugins.pixel.utils.TextWidthUtils.Companion.ellipsizeChat
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.ellipsizeChat
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
