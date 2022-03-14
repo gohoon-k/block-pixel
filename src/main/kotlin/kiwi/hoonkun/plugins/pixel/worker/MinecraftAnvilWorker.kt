@@ -6,14 +6,13 @@ import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.extensions.byte
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
+import kiwi.hoonkun.plugins.pixel.utils.CompressUtils
 
 import org.bukkit.ChatColor
 
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.ByteBuffer
-import java.util.zip.Deflater
-import java.util.zip.Inflater
 import kotlin.math.ceil
 
 class MinecraftAnvilWorker {
@@ -140,20 +139,7 @@ class MinecraftAnvilWorker {
 
             if (compressionType.toInt() != 2) throw Exception("unsupported compression type '$compressionType'")
 
-            val inflater = Inflater()
-            inflater.setInput(compressed)
-
-            val outputArray = ByteArray(1024)
-            val stream = ByteArrayOutputStream(compressed.size)
-            while (!inflater.finished()) {
-                val count = inflater.inflate(outputArray)
-                stream.write(outputArray, 0, count)
-            }
-
-            val chunk = stream.toByteArray()
-            stream.close()
-
-            val chunkBuffer = ByteBuffer.wrap(chunk)
+            val chunkBuffer = ByteBuffer.wrap(CompressUtils.ZLib.decompress(compressed))
             chunkBuffer.byte
             chunkBuffer.short
 
@@ -164,19 +150,7 @@ class MinecraftAnvilWorker {
             val buffer = ByteBuffer.allocate(Byte.SIZE_BYTES + Short.SIZE_BYTES + tag.sizeInBytes)
             tag.ensureName(null).getAs<CompoundTag>().writeAsRoot(buffer)
 
-            val deflater = Deflater()
-            deflater.setInput(buffer.array())
-            deflater.finish()
-
-            val compressTemplate = ByteArray(1024)
-            val compressStream = ByteArrayOutputStream()
-
-            while (!deflater.finished()) {
-                val count = deflater.deflate(compressTemplate)
-                compressStream.write(compressTemplate, 0, count)
-            }
-
-            val compressedData = compressStream.toByteArray()
+            val compressedData = CompressUtils.ZLib.compress(buffer.array())
             val compressionScheme = 2
 
             val length = compressedData.size + 1
