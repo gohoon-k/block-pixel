@@ -44,6 +44,23 @@ class ChatUtils {
             return "$result${if (ellipsized) "${ChatColor.GRAY}..." else ""}"
         }
 
+        fun String.removeChatColor(): String {
+            var result = ""
+            var isColorValue = false
+            for (index in indices) {
+                if (this[index] == '§') {
+                    isColorValue = true
+                    continue
+                }
+                if (isColorValue) {
+                    isColorValue = false
+                    continue
+                }
+                result += this[index]
+            }
+            return result
+        }
+
     }
 
 }

@@ -5,6 +5,7 @@ import kiwi.hoonkun.plugins.pixel.commands.*
 import kiwi.hoonkun.plugins.pixel.listener.PlayerPortalListener
 import kiwi.hoonkun.plugins.pixel.listener.PlayerSpawnListener
 import kiwi.hoonkun.plugins.pixel.utils.BranchUtils
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.removeChatColor
 import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.*
 import org.bukkit.*
@@ -172,7 +173,7 @@ class Entry: JavaPlugin() {
         if (args.joinToString(" ") == "merge abort") {
             CoroutineScope(Dispatchers.IO).launch {
                 val result = executors["merge"]!!.doIt(sender, remainingArgs)
-                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message)
+                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message.removeChatColor())
             }
             return true
         }
@@ -180,7 +181,7 @@ class Entry: JavaPlugin() {
         if (job?.isActive == true) {
             val message = "other command is running. please wait until previous command finishes..."
             sender.sendMessage("${ChatColor.YELLOW}$message")
-            server.logger.log(Level.WARNING, message)
+            server.logger.log(Level.WARNING, message.removeChatColor())
             return true
         }
 
@@ -193,7 +194,7 @@ class Entry: JavaPlugin() {
                 if (result.success) sender.sendMessage("${result.message}${if (result.recordTime) "${ChatColor.DARK_GRAY}, in ${endTime - startTime}ms" else ""}")
                 else sender.sendMessage("${ChatColor.RED}${result.message}")
 
-                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message)
+                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message.removeChatColor())
 
                 Executor.sendTitle(" ")
             } catch (e: Exception) {
