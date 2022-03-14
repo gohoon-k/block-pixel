@@ -235,9 +235,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         val branch = initialBranch
 
-        git.checkout()
-            .setName(branch)
-            .call()
+        git.checkout().setName(branch).call()
 
         initialBranch = null
 
@@ -247,13 +245,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             sendTitle("start merging '$world'...")
             delay(500)
 
-            val clientRegions = MergeWorker.merge(
-                parent.job,
-                from,
-                into,
-                ancestor,
-                mode
-            ).toWorldAnvilFormat()
+            val clientRegions = MergeWorker.merge(parent.job, from, into, ancestor, mode)
+                .toWorldAnvilFormat()
 
             state = RELOADING_WORLDS
             WorldLoader.movePlayersTo(parent, world)
@@ -281,9 +274,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         val message = "'$w$actualSource$g' into '$w$branch$g' of $w$world$g"
 
-        git.add()
-            .addFilepattern(".")
-            .call()
+        git.add().addFilepattern(".").call()
 
         git.commit()
             .setMessage("merged ${message.replace("$w", "").replace("$g", "")}")
