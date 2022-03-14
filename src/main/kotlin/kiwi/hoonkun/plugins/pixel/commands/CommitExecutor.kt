@@ -16,6 +16,9 @@ class CommitExecutor(parent: Entry): Executor(parent) {
 
         const val MESSAGE_NO_REPOSITORY = "repository with given world is not initialized!"
 
+        const val SUGGEST_NO_REPOSITORY = "please run '/pixel init' first."
+        const val SUGGEST_DETACHED_HEAD = "please create branch using '/pixel branch' before commit."
+
     }
 
     override val usage: String = "commit < world > < commit_message >"
@@ -25,70 +28,60 @@ class CommitExecutor(parent: Entry): Executor(parent) {
         if (args.size == 1)
             return RESULT_NO_COMMIT_MESSAGE
 
-        if (!isValidWorld(args[0]) && args[0] != "all")
-            return createUnknownWorldResult(args[0])
+        val world = args[0]
 
-        val targets = worldsWithAll(args[0]).toMutableList()
-        val excludedTargets = mutableListOf<String>()
+        if (!isValidWorld(world) && world != "all")
+            return createUnknownWorldResult(world)
 
-        targets.forEach {
-            val repo = parent.repositories[it] ?: run {
-                if (targets.size == 1)
-                    return CommandExecuteResult(
-                        false,
-                        "$r'$it' $MESSAGE_NO_REPOSITORY\nplease run '/pixel init' first."
-                    )
+        val targets = worldsWithAll(world).toMutableList()
 
-                sender?.sendMessage("$r'$it' $MESSAGE_NO_REPOSITORY\nskipping...")
-                excludedTargets.add(it)
-                return@forEach
-            }
+        if (targets.size == 1) {
+            val repo = parent.repositories[world]
+                ?: return CommandExecuteResult(false, "$r'$world' $MESSAGE_NO_REPOSITORY\n$y$SUGGEST_NO_REPOSITORY")
+            if (repo.refDatabase.findRef("HEAD").target.name == "HEAD")
+                return CommandExecuteResult(false, "$r'$world' $MESSAGE_DETACHED_HEAD\n$y$SUGGEST_DETACHED_HEAD")
+        } else {
+            targets.removeAll(targets.filter { parent.repositories[it] == null })
+            targets.filter {
+                val repo = parent.repositories[it]
+                repo != null && repo.refDatabase.findRef("HEAD").target.name == "HEAD"
+            }.also { detached ->
+                if (detached.isEmpty()) return@also
 
-            val head = repo.refDatabase.findRef("HEAD")
-            if (head.target.name == "HEAD") {
-                if (targets.size == 1)
-                    return CommandExecuteResult(
-                        false,
-                        "$r'$it' $MESSAGE_DETACHED_HEAD\nplease create branch using '/pixel branch' before commit."
-                    )
-
-                sender?.sendMessage("$r'$it' $MESSAGE_DETACHED_HEAD\nskipping...")
-                excludedTargets.add(it)
+                val joinedTargets = targets.joinToString(", ") { "'$it'" }
+                return CommandExecuteResult(false, "$r$joinedTargets $MESSAGE_DETACHED_HEAD\n$y$SUGGEST_DETACHED_HEAD")
             }
         }
-        targets.removeAll(excludedTargets)
-        if (targets.size == 0) {
-            return CommandExecuteResult(
-                false,
-                "all requested commits are skipped!"
-            )
-        }
 
-        targets.forEach { world -> IOWorker.addToVersionControl(parent, world) }
+        if (targets.size == 0)
+            return CommandExecuteResult(true, "there are no repositories exists. nothing happened.")
+
+        targets.forEach { IOWorker.addToVersionControl(parent, it) }
 
         return try {
             val hashes = mutableListOf<String>()
 
             targets.forEach {
-                val repo = parent.repositories[it] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+                sendTitle("committing '$it' world")
 
-                val git = Git(repo)
+                val git = Git(parent.repositories[it]!!)
 
-                git.add()
-                    .addFilepattern(".")
-                    .call()
+                git.add().addFilepattern(".").call()
 
                 val commit = git.commit()
                     .setMessage(args.slice(1 until args.size).joinToString(" "))
-                    .setCommitter(PersonIdent(repo))
+                    .setCommitter(PersonIdent(git.repository))
                     .call()
 
                 hashes.add(commit.name.substring(0 until 7))
             }
 
-            CommandExecuteResult(true, "${g}successfully committed world [$w${targets.joinToString("$g, $w")}$g] with hash [$w${hashes.joinToString("$g, $w")}$g]")
+            val committed = targets.joinToString(", ") { "$w$it(${parent.branch[it]})$g" }
+            val resultHashes = hashes.joinToString(", ") { "$w$it$g" }
+
+            CommandExecuteResult(true, "${g}successfully committed world [$committed] with hash [$resultHashes]")
         } catch (exception: GitAPIException) {
-            return createGitApiFailedResult("commit", exception)
+            createGitApiFailedResult("commit", exception)
         }
     }
 
