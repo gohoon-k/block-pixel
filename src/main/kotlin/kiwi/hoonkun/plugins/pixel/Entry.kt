@@ -5,6 +5,7 @@ import kiwi.hoonkun.plugins.pixel.commands.*
 import kiwi.hoonkun.plugins.pixel.listener.PlayerPortalListener
 import kiwi.hoonkun.plugins.pixel.listener.PlayerSpawnListener
 import kiwi.hoonkun.plugins.pixel.utils.BranchUtils
+import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.*
 import org.bukkit.*
 import org.bukkit.command.Command
@@ -122,6 +123,8 @@ class Entry: JavaPlugin() {
             .toMap()
             .toMutableMap()
 
+        WorldLoader.enable()
+
         server.pluginManager.registerEvents(PlayerPortalListener(this), this)
         server.pluginManager.registerEvents(PlayerSpawnListener(this), this)
 
@@ -132,6 +135,8 @@ class Entry: JavaPlugin() {
         super.onDisable()
 
         job?.cancel()
+
+        WorldLoader.disable()
 
         logger.log(Level.INFO, "pixel.minecraft-git plugin is disabled.")
     }

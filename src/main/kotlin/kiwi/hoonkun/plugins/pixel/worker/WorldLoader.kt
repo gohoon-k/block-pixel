@@ -2,9 +2,12 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.commands.Executor
+import kiwi.hoonkun.plugins.pixel.utils.CompressUtils
 import kotlinx.coroutines.delay
 import org.bukkit.*
 import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
+import java.util.*
 
 class WorldLoader {
 
@@ -19,6 +22,8 @@ class WorldLoader {
         )
 
         private val environments = mutableMapOf<String, World.Environment>()
+
+        private lateinit var playersFrom: MutableMap<UUID, String>
 
         private fun getWorld(plugin: JavaPlugin, worldName: String): World = plugin.server.getWorld(worldName)!!
 
@@ -81,6 +86,7 @@ class WorldLoader {
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
+                    playersFrom[it.uniqueId] = it.world.name
                     it.setGravity(false)
                     it.teleport(Location(void, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
                 }
@@ -95,11 +101,48 @@ class WorldLoader {
             val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
 
             plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.onlinePlayers.filter { it.world.uid == void?.uid }.forEach {
+                plugin.server.onlinePlayers.filter { it.world.uid == void?.uid && playersFrom[it.uniqueId] == world.name }.forEach {
                     it.teleport(Location(world, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
                     it.setGravity(true)
+                    playersFrom.remove(it.uniqueId)
                 }
             })
+        }
+
+        fun returnPlayer(original: Location, uniqueId: UUID, plugin: JavaPlugin): Location {
+            val world = plugin.server.getWorld(playersFrom[uniqueId] ?: return original) ?: return original
+
+            playersFrom.remove(uniqueId)
+            return Location(world, original.x, original.y, original.z, original.yaw, original.pitch)
+        }
+
+        fun enable() {
+            val datafile = File("${Entry.versionedFolder.absolutePath}/../pixel.players_from")
+            if (!datafile.exists()) datafile.createNewFile()
+
+            val compressedBytes = datafile.readBytes()
+            playersFrom = if (compressedBytes.isNotEmpty()) {
+                val decompressed = CompressUtils.GZip.decompress(compressedBytes)
+                String(decompressed)
+                    .split("\n")
+                    .map { it.split(" from ") }
+                    .associate { UUID.fromString(it[0]) to it[1] }
+                    .toMutableMap()
+            } else {
+                mutableMapOf()
+            }
+        }
+
+        fun disable() {
+            val datafile = File("${Entry.versionedFolder.absolutePath}/../pixel.players_from")
+            val content = playersFrom.entries.joinToString("\n ") { "${it.key} from ${it.value}" }
+
+            if (content.isEmpty()) {
+                datafile.delete()
+            } else {
+                val compressed = CompressUtils.GZip.compress(content.toByteArray())
+                datafile.writeBytes(compressed)
+            }
         }
 
     }
