@@ -70,7 +70,7 @@ class CommitExecutor(parent: Entry): Executor(parent) {
 
                 val commit = git.commit()
                     .setMessage(args.slice(1 until args.size).joinToString(" "))
-                    .setCommitter(PersonIdent(git.repository))
+                    .setCommitter(PersonIdent("pixel-craft", "pixel.craft@hoonkun.kiwi"))
                     .call()
 
                 hashes.add(commit.name.substring(0 until 7))

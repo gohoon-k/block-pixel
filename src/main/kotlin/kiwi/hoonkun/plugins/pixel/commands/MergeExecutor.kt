@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.removeChatColor
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toWorldAnvilFormat
@@ -277,8 +278,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         git.add().addFilepattern(".").call()
 
         git.commit()
-            .setMessage("merged ${message.replace("$w", "").replace("$g", "")}")
-            .setCommitter(PersonIdent(git.repository))
+            .setMessage("merged ${message.removeChatColor()}")
+            .setCommitter(PersonIdent("pixel-craft", "pixel.craft@hoonkun.kiwi"))
             .call()
 
         return "${g}committed successful merge of $message"
