@@ -6,10 +6,10 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater.Companion.isEmittingLights
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
-
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 
 import org.bukkit.ChatColor
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.floor
 
 
@@ -38,7 +38,11 @@ class MergeWorker {
             "minecraft:weaponsmith" to 1,
         )
 
-        suspend fun merge(from: WorldAnvil, into: WorldAnvil, ancestor: WorldAnvil, mode: MergeMode): WorldAnvil {
+        private fun throwIfInactive(job: Job?) {
+            if (job?.isActive != true) throw CancellationException()
+        }
+
+        fun merge(job: Job?, from: WorldAnvil, into: WorldAnvil, ancestor: WorldAnvil, mode: MergeMode): WorldAnvil {
             val mergedChunk: MutableAnvil<Terrain> = mutableMapOf()
 
             Executor.sendTitle("merging chunks...")
@@ -54,7 +58,7 @@ class MergeWorker {
                 val mergedChunks = mutableListOf<Terrain>()
                 associateChunk(from.terrain[location], into.terrain[location], ancestor.terrain[location])
                     .forEach { associatedMap ->
-                        delay(1)
+                        throwIfInactive(job)
 
                         Executor.sendTitle("merging terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${associatedMap.key.x}$g][$w${associatedMap.key.z}$g]")
 
@@ -94,6 +98,8 @@ class MergeWorker {
             ).toList()
 
             aEntities.forEachIndexed { index, entity ->
+                throwIfInactive(job)
+
                 Executor.sendTitle("merging entities, [$index/${aEntities.size}]")
 
                 val oHasE = oEntities.contains(entity)
@@ -118,6 +124,8 @@ class MergeWorker {
             val mergedMutableEntity: MutableAnvil<MutableEntity> = mutableMapOf()
 
             allMergedEntities.forEach { entityEach ->
+                throwIfInactive(job)
+
                 val nbtLocation = ChunkLocation(
                     floor(entityEach.pos[0] / 16.0).toInt(),
                     floor(entityEach.pos[2] / 16.0).toInt()
@@ -168,6 +176,8 @@ class MergeWorker {
             val allMergedRecords = mutableListOf<PoiRecord>()
             
             aRecords.forEachIndexed { index, record ->
+                throwIfInactive(job)
+
                 Executor.sendTitle("merging poi records, [$index/${aRecords.size}]")
 
                 val oHasR = oRecords.contains(record)
@@ -211,6 +221,8 @@ class MergeWorker {
             }
 
             allMergedRecords.forEachIndexed { index, poiRecord ->
+                throwIfInactive(job)
+
                 Executor.sendTitle("applying free tickets of poi records [$index/${allMergedRecords.size}]")
 
                 if (!maxFreeTickets.keys.contains(poiRecord.type)) return@forEachIndexed
@@ -236,6 +248,8 @@ class MergeWorker {
             val mergedMutablePoi: MutableAnvil<MutablePoi> = mutableMapOf()
 
             allMergedRecords.forEachIndexed { index, record ->
+                throwIfInactive(job)
+
                 Executor.sendTitle("classifying poi records [$index/${allMergedRecords.size}]")
 
                 val nbtLocation = ChunkLocation(

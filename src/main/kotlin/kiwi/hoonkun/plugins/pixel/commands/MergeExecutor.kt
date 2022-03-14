@@ -252,6 +252,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
                 sendTitle("start merging '$world'...")
                 delay(1000)
                 val clientRegions = MergeWorker.merge(
+                    parent.job,
                     from.getValue(world),
                     into.getValue(world),
                     ancestor.getValue(world),
