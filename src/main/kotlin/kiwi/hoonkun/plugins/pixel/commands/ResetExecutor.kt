@@ -23,10 +23,12 @@ class ResetExecutor(parent: Entry): Executor(parent) {
     override val description: String = "reset given world to specified commit or N steps backward commit"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (!isValidWorld(args[0]))
-            return createUnknownWorldResult(args[0])
+        val world = args[0]
 
-        val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+        if (!isValidWorld(world))
+            return createUnknownWorldResult(world)
+
+        val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
         if (args.size == 1)
             return RESULT_NO_TARGET
@@ -36,10 +38,10 @@ class ResetExecutor(parent: Entry): Executor(parent) {
         try {
             Git(repo).reset()
                 .setMode(ResetCommand.ResetType.HARD)
-                .setRef(if (target != null && target <= 10) "HEAD~${args[1]}" else args[1])
+                .setRef(if (target != null && target <= 10) "HEAD~$target" else args[1])
                 .call()
 
-            IOWorker.replaceFromVersionControl(parent, worlds(args[0]))
+            IOWorker.replaceFromVersionControl(parent, world)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("reset", exception)
         } catch (exception: UnknownWorldException) {

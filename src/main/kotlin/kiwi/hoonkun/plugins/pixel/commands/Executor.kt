@@ -70,10 +70,6 @@ abstract class Executor(val parent: Entry) {
 
     fun isValidWorld(worldName: String): Boolean = parent.server.worlds.map { it.name }.contains(worldName)
 
-    fun worlds(arg: String): List<String> =
-        if (parent.repositoryKeys.contains(arg)) listOf(arg)
-        else throw UnknownWorldException(arg)
-
     fun worldsWithAll(arg: String, repository: Boolean = true): List<String> =
         if (arg == "all") {
             if (repository) parent.repositoryKeys else parent.availableWorldNames

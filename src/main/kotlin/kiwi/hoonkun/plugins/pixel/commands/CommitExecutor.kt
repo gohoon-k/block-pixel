@@ -64,7 +64,7 @@ class CommitExecutor(parent: Entry): Executor(parent) {
             )
         }
 
-        IOWorker.addToVersionControl(parent, targets)
+        targets.forEach { world -> IOWorker.addToVersionControl(parent, world) }
 
         return try {
             val hashes = mutableListOf<String>()

@@ -15,7 +15,7 @@ class DiscardExecutor(parent: Entry): Executor(parent) {
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
         try {
-            IOWorker.replaceFromVersionControl(parent, worlds(args[0]))
+            IOWorker.replaceFromVersionControl(parent, args[0])
         } catch (exception: UnknownWorldException) {
             return createUnknownWorldResult(exception)
         }

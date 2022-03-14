@@ -31,11 +31,12 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
         val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
         val git = Git(repo)
-        val targets = worlds(args[0])
+        val world = args[0]
+        val name = args[1]
 
-        if (args.size == 2 && args[1] == "-recover") {
+        if (args.size == 2 && name == "-recover") {
             git.checkout().setStartPoint("HEAD").setAllPaths(true).call()
-            IOWorker.replaceFromVersionControl(parent, targets)
+            IOWorker.replaceFromVersionControl(parent, world)
             return CommandExecuteResult(true, "cleaned versioned directory to ${repo.branch}")
         }
 
@@ -46,23 +47,23 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
             return RESULT_UNCOMMITTED
 
         try {
-            val command = git.checkout().setName(args[1])
+            val command = git.checkout().setName(name)
             command.call()
 
             if (command.result.status != CheckoutResult.Status.OK) {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            parent.branch[args[0]] = repo.branch
+            parent.branch[world] = repo.branch
 
-            IOWorker.replaceFromVersionControl(parent, targets)
+            IOWorker.replaceFromVersionControl(parent, world)
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("checkout", exception)
         } catch (exception: UnknownWorldException) {
             return createUnknownWorldResult(exception)
         }
 
-        return CommandExecuteResult(true, "${g}successfully checkout to '$w${args[1]}$g'")
+        return CommandExecuteResult(true, "${g}successfully checkout to '$w$name$g'")
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {

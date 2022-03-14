@@ -24,9 +24,9 @@ class IOWorker {
 
 
         fun repositoryWorldNBTs(
-            worlds: List<String>
-        ): Map<String, WorldAnvil> {
-            return worlds.associateWith { WorldAnvil(repositoryChunk(it), repositoryEntity(it), repositoryPoi(it)) }
+            world: String
+        ): WorldAnvil {
+            return WorldAnvil(repositoryChunk(world), repositoryEntity(world), repositoryPoi(world))
         }
 
         private inline fun <T: ChunkData> repositoryNBT(
@@ -73,24 +73,20 @@ class IOWorker {
 
         suspend fun addToVersionControl(
             plugin: Entry,
-            worlds: List<String>,
+            world: String,
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            worlds.forEach { world ->
-                copyAnvilFiles(plugin, world,false, needsUnload, needsLoad)
-            }
+            copyAnvilFiles(plugin, world,false, needsUnload, needsLoad)
         }
 
         suspend fun replaceFromVersionControl(
             plugin: Entry,
-            worlds: List<String>,
+            world: String,
             needsUnload: Boolean = true,
             needsLoad: Boolean = true
         ) {
-            worlds.forEach { world ->
-                copyAnvilFiles(plugin, world, true, needsUnload, needsLoad)
-            }
+            copyAnvilFiles(plugin, world, true, needsUnload, needsLoad)
         }
 
         private suspend fun copyAnvilFiles(
