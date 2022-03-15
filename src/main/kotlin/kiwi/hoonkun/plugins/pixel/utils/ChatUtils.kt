@@ -21,27 +21,53 @@ class ChatUtils {
             var result = ""
             var width = 0
             var ellipsized = false
-            var isColorValue = false
             for (index in indices) {
                 if (this[index] == '§') {
-                    isColorValue = true
                     result += this[index]
+                    width -= (widths[this[index + 1]] ?: 5) + letterSpacing
                     continue
                 }
-                if (isColorValue) {
-                    isColorValue = false
-                    result += this[index]
-                    continue
-                }
-                width += widths[this[index]] ?: 5
-                width += letterSpacing
+
+                width += (widths[this[index]] ?: 5) + letterSpacing
                 result += this[index]
+
                 if (width >= 300) {
                     ellipsized = true
                     break
                 }
             }
             return "$result${if (ellipsized) "${ChatColor.GRAY}..." else ""}"
+        }
+
+        fun String.ellipsizeChatHead(): String {
+            var result = ""
+            var width = 0
+            var ellipsized = false
+            var chatColorIndex = length
+            for (index in length - 1 downTo 0) {
+                if (this[index] == '§') {
+                    width -= widths[result[0]] ?: 5
+                    result = "${this[index]}$result"
+                    chatColorIndex = index
+                    continue
+                }
+
+                width += (widths[this[index]] ?: 5) + letterSpacing
+                result = "${this[index]}$result"
+
+                if (index > 1 && this[index - 1] != '§' && width >= 300) {
+                    ellipsized = true
+                    break
+                }
+            }
+
+            val sub = substring(0 until chatColorIndex)
+            val lastColorIndex = sub.lastIndexOf("§")
+            val lastColor = if (lastColorIndex != -1)
+                substring(lastColorIndex, lastColorIndex + 2)
+            else ""
+
+            return "${if (ellipsized) "${ChatColor.GRAY}...${ChatColor.RESET}" else ""}$lastColor$result"
         }
 
         fun String.removeChatColor(): String {
