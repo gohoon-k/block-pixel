@@ -22,7 +22,7 @@ class InitializeExecutor(parent: Entry): Executor(parent) {
         if (!isValidWorld(world) && world != "all")
             return createUnknownWorldResult(world)
 
-        val targets = worldsWithAll(args[0], false).toMutableList()
+        val targets = worldsWithAll(world, false).toMutableList()
         val skipped = mutableListOf<String>()
 
         targets.forEach {

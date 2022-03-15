@@ -17,9 +17,6 @@ class ListExecutor(parent: Entry): Executor(parent) {
 
         val FIRST_ARGS_LIST = mutableListOf("commits", "branches")
 
-        val RESULT_NO_TARGET_WORLD =
-            CommandExecuteResult(false, "argument is missing. target world is must be specified.")
-
         val RESULT_INVALID_LIST_TYPE =
             CommandExecuteResult(false, "invalid argument. only 'commits' and 'branches' are allowed to list up.")
 
@@ -34,17 +31,19 @@ class ListExecutor(parent: Entry): Executor(parent) {
     private val pageSize = 9
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.size == 1)
-            return RESULT_NO_TARGET_WORLD
-
-        if (!isValidWorld(args[1]))
-            return createUnknownWorldResult(args[1])
-
-        val repo = parent.repositories[args[1]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+        if (args.size < 2)
+            return createNotEnoughArgumentsResult(listOf(2), args.size)
 
         val what = args[0]
+        val world = args[1]
+
+        if (!isValidWorld(world))
+            return createUnknownWorldResult(world)
+
         if (what != "commits" && what != "branches")
             return RESULT_INVALID_LIST_TYPE
+
+        val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
         val page = if (args.size == 3) {
             args[2].toIntOrNull() ?: return RESULT_INVALID_PAGE

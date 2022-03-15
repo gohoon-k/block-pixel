@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.CheckoutResult
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.lib.Repository
 
 class CheckoutExecutor(parent: Entry): Executor(parent) {
 
@@ -13,41 +14,36 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
 
         val SECOND_ARGS_LIST = mutableListOf("-recover")
 
-        val RESULT_NO_CHECKOUT_TARGET =
-            CommandExecuteResult(false, "argument is missing, checkout target must be specified.")
-
     }
 
-    override val usage: String = "checkout < branch | commit > < world > < committed >"
+    override val usage: String = "checkout < world > < branch | commit > < committed >"
     override val description: String = "checkout to given branch or commit with specified world's repository"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.size == 1)
-            return RESULT_NO_CHECKOUT_TARGET
+        if (args.size < 2)
+            return createNotEnoughArgumentsResult(listOf(2, 3), args.size)
 
-        if (!isValidWorld(args[0]))
-            return createUnknownWorldResult(args[0])
-
-        val repo = parent.repositories[args[0]] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
-
-        val git = Git(repo)
         val world = args[0]
         val name = args[1]
 
-        if (args.size == 2 && name == "-recover") {
-            git.checkout().setStartPoint("HEAD").setAllPaths(true).call()
-            IOWorker.replaceFromVersionControl(parent, world)
-            return CommandExecuteResult(true, "cleaned versioned directory to ${repo.branch}")
-        }
+        if (!isValidWorld(world))
+            return createUnknownWorldResult(world)
 
-        if (args.size == 2)
-            return RESULT_NO_COMMIT_CONFIRM
+        val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-        if (args[2] != "true")
+        if (name == "-recover")
+            return recover(repo, world)
+
+        if (args.size < 3)
+            return createNotEnoughArgumentsResult(listOf(3), args.size)
+
+        val commitConfirm = args[2]
+
+        if (commitConfirm != "true")
             return RESULT_UNCOMMITTED
 
         try {
-            val command = git.checkout().setName(name)
+            val command = Git(repo).checkout().setName(name)
             command.call()
 
             if (command.result.status != CheckoutResult.Status.OK) {
@@ -81,6 +77,12 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
             3 -> if (args[1] != "-recover") ARGS_LIST_COMMIT_CONFIRM else ARGS_LIST_EMPTY
             else -> ARGS_LIST_EMPTY
         }
+    }
+
+    private suspend fun recover(repo: Repository, world: String): CommandExecuteResult {
+        Git(repo).checkout().setStartPoint("HEAD").setAllPaths(true).call()
+        IOWorker.replaceFromVersionControl(parent, world)
+        return CommandExecuteResult(true, "cleaned versioned directory to ${repo.branch}")
     }
 
 }

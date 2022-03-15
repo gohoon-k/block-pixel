@@ -36,12 +36,6 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         const val APPLYING_LIGHTS = -3
         const val COMMITTING = -4
 
-        val RESULT_NO_MERGE_SOURCE =
-            CommandExecuteResult(false, "missing arguments. merge source must be specified.")
-
-        val RESULT_NO_MERGE_MODE =
-            CommandExecuteResult(false, "missing arguments. merge mode must be specified.")
-
         val RESULT_INVALID_MERGE_MODE =
             CommandExecuteResult(false, "invalid merge mode. only 'keep' or 'replace' are supported.")
 
@@ -83,11 +77,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         if (args[0] == "abort")
             return abort()
 
-        if (args.size == 1)
-            return RESULT_NO_MERGE_SOURCE
-
-        if (args.size == 2)
-            return RESULT_NO_MERGE_MODE
+        if (args.size < 4)
+            return createNotEnoughArgumentsResult(listOf(4), args.size)
 
         val world = args[0]
         val sourceArg = args[1]
@@ -96,17 +87,15 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             "replace" -> MergeWorker.Companion.MergeMode.REPLACE
             else -> return RESULT_INVALID_MERGE_MODE
         }
+        val commitConfirm = args[3]
 
         if (!isValidWorld(world))
             return createUnknownWorldResult(world)
 
-        val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
-
-        if (args.size == 3)
-            return RESULT_NO_COMMIT_CONFIRM
-
-        if (args[3] != "true")
+        if (commitConfirm != "true")
             return RESULT_UNCOMMITTED
+
+        val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
         val head = repo.refDatabase.findRef("HEAD")
         if (head.target.name == "HEAD")

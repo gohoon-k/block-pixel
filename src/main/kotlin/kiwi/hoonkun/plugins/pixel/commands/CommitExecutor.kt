@@ -11,9 +11,6 @@ class CommitExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val RESULT_NO_COMMIT_MESSAGE =
-            CommandExecuteResult(false, "missing arguments. commit message must be specified.")
-
         const val MESSAGE_NO_REPOSITORY = "repository with given world is not initialized!"
 
         const val SUGGEST_NO_REPOSITORY = "please run '/pixel init' first."
@@ -25,10 +22,11 @@ class CommitExecutor(parent: Entry): Executor(parent) {
     override val description: String = "creates new commit to given world's repository, in current branch."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args.size == 1)
-            return RESULT_NO_COMMIT_MESSAGE
+        if (args.size < 2)
+            return createNotEnoughArgumentsResult(listOf(2), args.size)
 
         val world = args[0]
+        val message = args.slice(1 until args.size).joinToString(" ")
 
         if (!isValidWorld(world) && world != "all")
             return createUnknownWorldResult(world)
@@ -69,7 +67,7 @@ class CommitExecutor(parent: Entry): Executor(parent) {
                 git.add().addFilepattern(".").call()
 
                 val commit = git.commit()
-                    .setMessage(args.slice(1 until args.size).joinToString(" "))
+                    .setMessage(message)
                     .setCommitter(PersonIdent("pixel-craft", "pixel.craft@hoonkun.kiwi"))
                     .call()
 

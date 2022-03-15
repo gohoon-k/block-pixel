@@ -1,7 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.ellipsizeChat
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.ellipsizeChatHead
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.ChatColor
@@ -33,9 +33,6 @@ abstract class Executor(val parent: Entry) {
         val r = ChatColor.RED
         val y = ChatColor.YELLOW
 
-        val RESULT_NO_COMMIT_CONFIRM =
-            CommandExecuteResult(false, "you must specify that you have committed all uncommitted changes before checkout.\nif yes, pass 'true' to last argument.")
-
         val RESULT_UNCOMMITTED =
             CommandExecuteResult(false, "you specified that you didn't committed changes. please commit them first.")
 
@@ -57,7 +54,9 @@ abstract class Executor(val parent: Entry) {
 
     private val commandRoot: String = "/$ROOT_NAME "
 
-    private val help: String get() = "$y${"$commandRoot$usage".ellipsizeChat()}\n$g$description"
+    private val fullUsage: String get() = "$y$commandRoot$usage".ellipsizeChatHead()
+
+    private val help: String get() = "$fullUsage\n$g$description"
 
     fun createGitApiFailedResult(operation: String, exception: GitAPIException): CommandExecuteResult =
         CommandExecuteResult(false, "failed to $operation because of exception\n${exception.message}")
@@ -67,6 +66,9 @@ abstract class Executor(val parent: Entry) {
 
     fun createUnknownWorldResult(worldName: String): CommandExecuteResult =
         CommandExecuteResult(false, "unknown world '$worldName'")
+
+    fun createNotEnoughArgumentsResult(required: List<Int>, got: Int): CommandExecuteResult =
+        CommandExecuteResult(false, "not enough arguments. required ${required.joinToString(" or ")}, got $got. ${w}usage is:\n$fullUsage")
 
     fun isValidWorld(worldName: String): Boolean = parent.server.worlds.map { it.name }.contains(worldName)
 

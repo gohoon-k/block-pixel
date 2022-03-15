@@ -11,9 +11,6 @@ class ResetExecutor(parent: Entry): Executor(parent) {
 
     companion object {
 
-        val RESULT_NO_TARGET =
-            CommandExecuteResult(false, "argument is missing. steps or commit hash must be specified.")
-
         val RESULT_SUCCESS =
             CommandExecuteResult(true, "${g}successfully reset commits.")
 
@@ -23,22 +20,22 @@ class ResetExecutor(parent: Entry): Executor(parent) {
     override val description: String = "reset given world to specified commit or N steps backward commit"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        if (args.size < 2)
+            return createNotEnoughArgumentsResult(listOf(2), args.size)
+
         val world = args[0]
+        val commit = args[1]
+        val steps = args[1].toIntOrNull()
 
         if (!isValidWorld(world))
             return createUnknownWorldResult(world)
 
         val repo = parent.repositories[world] ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
-        if (args.size == 1)
-            return RESULT_NO_TARGET
-
-        val target = args[1].toIntOrNull()
-
         try {
             Git(repo).reset()
                 .setMode(ResetCommand.ResetType.HARD)
-                .setRef(if (target != null && target <= 10) "HEAD~$target" else args[1])
+                .setRef(if (steps != null && steps <= 10) "HEAD~$steps" else commit)
                 .call()
 
             IOWorker.replaceFromVersionControl(parent, world)

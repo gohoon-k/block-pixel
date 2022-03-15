@@ -1,7 +1,6 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
-import org.bukkit.Location
 import org.bukkit.command.CommandSender
 
 class TeleportExecutor(parent: Entry): Executor(parent) {
@@ -9,9 +8,6 @@ class TeleportExecutor(parent: Entry): Executor(parent) {
     companion object {
 
         val SECOND_ARGS_LIST = mutableListOf("dummy", "overworld")
-
-        val RESULT_NO_DESTINATION =
-            CommandExecuteResult(false, "missing argument. destination must be specified.")
 
         val RESULT_INVALID_DESTINATION =
             CommandExecuteResult(false, "invalid argument. destination must be one of 'dummy' or 'overworld'")
@@ -22,37 +18,26 @@ class TeleportExecutor(parent: Entry): Executor(parent) {
     override val description: String = "teleport player to specified world"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        val target = parent.server.getPlayer(args[0]) ?: return CommandExecuteResult(false, "unknown player '${args[0]}'")
+        if (args.size < 2)
+            return createNotEnoughArgumentsResult(listOf(2), args.size)
 
-        if (args.size == 1)
-            return RESULT_NO_DESTINATION
-
+        val player = args[0]
         val destination = args[1]
 
         if (destination != "dummy" && destination != "overworld")
             return RESULT_INVALID_DESTINATION
 
+        val target = parent.server.getPlayer(player) ?: return CommandExecuteResult(false, "unknown player '${player}'")
+
         parent.server.scheduler.runTask(parent, Runnable {
             when (destination) {
-                "dummy" -> target.teleport(Location(
-                    parent.server.getWorld(Entry.levelName),
-                    target.location.x,
-                    target.location.y,
-                    target.location.z,
-                    target.location.yaw,
-                    target.location.pitch
-                ))
+                "dummy" -> {
+                    target.teleport(target.location.clone().apply { world = parent.server.getWorld(Entry.levelName) })
+                }
                 "overworld" -> {
                     parent.server.getWorld("${Entry.levelName}_overworld").also {
                         if (it == null) sender?.sendMessage("${r}overworld is unloaded by pixel command now.\nplease wait until pixel command finishes.")
-                        else target.teleport(Location(
-                            it,
-                            target.location.x,
-                            target.location.y,
-                            target.location.z,
-                            target.location.yaw,
-                            target.location.pitch
-                        ))
+                        else target.teleport(target.location.clone().apply { world = it })
                     }
                 }
             }

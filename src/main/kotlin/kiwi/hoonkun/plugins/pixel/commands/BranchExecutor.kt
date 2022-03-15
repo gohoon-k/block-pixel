@@ -4,6 +4,7 @@ import kiwi.hoonkun.plugins.pixel.Entry
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.lib.Repository
 
 class BranchExecutor(parent: Entry): Executor(parent) {
 
@@ -11,12 +12,9 @@ class BranchExecutor(parent: Entry): Executor(parent) {
 
         val SECOND_ARGS_LIST = mutableListOf("-d")
 
-        val RESULT_NO_TARGET_BRANCH_TO_DELETE =
-            CommandExecuteResult(false, "missing arguments. delete target branch must be specified.")
-
     }
 
-    override val usage: String = "branch < new_branch | \"-d\" > [ branch_to_delete ]"
+    override val usage: String = "branch < world > < new_branch | \"-d\" > [ branch_to_delete ]"
     override val description: String = "creates new branch to given world's repository.\nif \"-d\" is set, 'branch_to_delete' must be specified."
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
@@ -30,40 +28,12 @@ class BranchExecutor(parent: Entry): Executor(parent) {
         if (args.size == 1)
             return CommandExecuteResult(true, "${g}you are currently in '$w${repo.branch}$g' branch in world '$targetWorld' repository.", false)
 
-        if (args[1] == "-d") {
-            if (args.size == 2) return RESULT_NO_TARGET_BRANCH_TO_DELETE
+        val second = args[1]
 
-            val target = args[2]
+        if (second == "-d")
+            return deleteBranch(args, repo)
 
-            try {
-                Git(repo).branchDelete()
-                    .setBranchNames(target)
-                    .setForce(true)
-                    .call()
-            } catch (e: GitAPIException) {
-                return createGitApiFailedResult("delete branch", e)
-            }
-
-            parent.branches[args[0]]?.remove(args[2])
-
-            return CommandExecuteResult(true, "${g}successfully deleted branch '$w${target}$g'", false)
-        }
-
-        val target = args[1]
-
-        try {
-            Git(repo).checkout()
-                .setName(target)
-                .setCreateBranch(true)
-                .call()
-
-            parent.branches[args[0]]?.add(args[1])
-            parent.branch[args[0]] = args[1]
-        } catch (exception: GitAPIException) {
-            return createGitApiFailedResult("branch", exception)
-        }
-
-        return CommandExecuteResult(true, "${g}successfully created new branch '$w${target}$g'", false)
+        return createBranch(args, repo)
     }
 
     override fun autoComplete(args: List<String>): MutableList<String> {
@@ -81,6 +51,44 @@ class BranchExecutor(parent: Entry): Executor(parent) {
             }
             else -> ARGS_LIST_EMPTY
         }
+    }
+
+    private fun createBranch(args: List<String>, repo: Repository): CommandExecuteResult {
+        val target = args[1]
+
+        try {
+            Git(repo).checkout()
+                .setName(target)
+                .setCreateBranch(true)
+                .call()
+
+            parent.branches[args[0]]?.add(args[1])
+            parent.branch[args[0]] = args[1]
+        } catch (exception: GitAPIException) {
+            return createGitApiFailedResult("branch", exception)
+        }
+
+        return CommandExecuteResult(true, "${g}successfully created new branch '$w${target}$g'", false)
+    }
+
+    private fun deleteBranch(args: List<String>, repo: Repository): CommandExecuteResult {
+        if (args.size == 2)
+            return createNotEnoughArgumentsResult(listOf(3), args.size)
+
+        val toDelete = args[2]
+
+        try {
+            Git(repo).branchDelete()
+                .setBranchNames(toDelete)
+                .setForce(true)
+                .call()
+        } catch (e: GitAPIException) {
+            return createGitApiFailedResult("delete branch", e)
+        }
+
+        parent.branches[args[0]]?.remove(args[2])
+
+        return CommandExecuteResult(true, "${g}successfully deleted branch '$w${toDelete}$g'", false)
     }
 
 }
