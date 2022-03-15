@@ -172,8 +172,7 @@ class Entry: JavaPlugin() {
 
         if (args.joinToString(" ") == "merge abort") {
             CoroutineScope(Dispatchers.IO).launch {
-                val result = executors["merge"]!!.doIt(sender, remainingArgs)
-                server.logger.log(if (result.success) Level.INFO else Level.WARNING, result.message.removeChatColor())
+                executors["merge"]!!.doIt(sender, remainingArgs)
             }
             return true
         }

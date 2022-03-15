@@ -1,6 +1,7 @@
 package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
+import kiwi.hoonkun.plugins.pixel.WorldAnvil
 import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.removeChatColor
 import kiwi.hoonkun.plugins.pixel.worker.IOWorker
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
@@ -11,6 +12,7 @@ import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevWalk
@@ -29,7 +31,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         const val IDLE = -1
 
-        const val MERGING = 1
+        const val COMPUTING = 1
         const val RELOADING_WORLDS = -2
         const val APPLYING_LIGHTS = -3
         const val COMMITTING = -4
@@ -46,14 +48,14 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         val RESULT_DETACHED_HEAD =
             CommandExecuteResult(false, "$MESSAGE_DETACHED_HEAD\njust create new branch here, before merge.")
 
-        val RESULT_CANCELED =
-            CommandExecuteResult(true, "merge operation was canceled by operator.")
-
         val RESULT_FAILED =
             CommandExecuteResult(false, "failed to merge because of internal exception.")
 
         val RESULT_ABORT_SUCCESS =
-            CommandExecuteResult(true, "merge operation is canceled by operator.")
+            CommandExecuteResult(true, "merge operation is successfully aborted.")
+
+        val RESULT_ABORT_SUCCESS_SILENT =
+            CommandExecuteResult(true, "dummy. silent message.")
 
         val RESULT_ABORT_NOT_MERGING =
             CommandExecuteResult(false, "merger is not merging any commits")
@@ -77,31 +79,18 @@ class MergeExecutor(parent: Entry): Executor(parent) {
     override val usage: String = "merge < world > < branch | commit > < mode > < committed >"
     override val description: String = "merge another branch into current branch using specified merge mode"
 
-    private var initialBranch: String? = null
-
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (args[0] == "abort" && state > 0) {
-            parent.job?.cancel()
-            return RESULT_ABORT_SUCCESS
-        } else if (args[0] == "abort" && state < 0) {
-            return when (state) {
-                IDLE -> RESULT_ABORT_NOT_MERGING
-                APPLYING_LIGHTS -> RESULT_ABORT_LIGHT_UPDATING
-                RELOADING_WORLDS -> RESULT_ABORT_WORLD_LOADING
-                COMMITTING -> RESULT_ABORT_COMMITTING
-                else -> RESULT_ABORT_IMPOSSIBLE
-            }
-        }
+        if (args[0] == "abort")
+            return abort()
 
         if (args.size == 1)
             return RESULT_NO_MERGE_SOURCE
 
-        val world = args[0]
-        val sourceArg = args[1]
-
         if (args.size == 2)
             return RESULT_NO_MERGE_MODE
 
+        val world = args[0]
+        val sourceArg = args[1]
         val mode = when (args[2]) {
             "keep" -> MergeWorker.Companion.MergeMode.KEEP
             "replace" -> MergeWorker.Companion.MergeMode.REPLACE
@@ -123,17 +112,15 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         if (head.target.name == "HEAD")
             return RESULT_DETACHED_HEAD
 
-        try {
-            initialBranch = repo.branch ?: return RESULT_REPOSITORY_NOT_INITIALIZED
+        val intoBranch = repo.branch ?: return RESULT_REPOSITORY_NOT_INITIALIZED
 
+        try {
             val message = merge(repo, sourceArg, world, mode)
 
             if (message != null) {
                 sendTitle("finished merging, reloading world...")
 
                 IOWorker.replaceFromVersionControl(parent, world, needsUnload = false)
-
-                WorldLoader.returnPlayersTo(parent, world)
             }
 
             state = IDLE
@@ -141,25 +128,16 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             return if (message != null)
                 CommandExecuteResult(true, message)
             else
-                RESULT_CANCELED
+                RESULT_ABORT_SUCCESS
         } catch (exception: UnknownWorldException) {
             return createUnknownWorldResult(exception)
         } catch (e: Exception) {
             e.printStackTrace()
 
-            val branch = initialBranch
+            Git(repo).checkout().setName(intoBranch).call()
 
-            if (branch != null)
-                Git(repo)
-                    .checkout()
-                    .setName(branch)
-                    .call()
-
-            initialBranch = null
-
-            if (e is MergeException) {
+            if (e is MergeException)
                 return CommandExecuteResult(false, e.message!!)
-            }
 
             return RESULT_FAILED
         }
@@ -194,54 +172,32 @@ class MergeExecutor(parent: Entry): Executor(parent) {
     ): String? {
         val git = Git(repo)
 
-        val intoCommits = git.log().setMaxCount(1).call().toList()
-        val intoCommit =
-            if (intoCommits.isNotEmpty()) intoCommits[0]
-            else throw NoValidCommitsException()
-
+        val intoBranch = repo.branch
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
-        sendTitle("reading current regions...")
-        val into = IOWorker.repositoryWorldNBTs(world)
+        val (into, intoCommit) = readAnvil(world, repo)
+        val (from, fromCommit) = readAnvil(world, repo, source)
 
-        try {
-            git.checkout().setName(source).call()
-        } catch (e: GitAPIException) {
-            throw UnknownSourceException(source)
-        }
+        if (intoCommit.name == fromCommit.name) throw InvalidMergeOperationException()
 
-        val fromCommits = git.log().setMaxCount(1).call().toList()
-        val fromCommit =
-            if (fromCommits.isNotEmpty()) fromCommits[0]
-            else throw NoValidCommitsException()
+        val commitWalk = RevWalk(git.repository)
 
-        sendTitle("reading current regions...")
-        val from = IOWorker.repositoryWorldNBTs(world)
+        val base = RevWalk(git.repository)
+            .apply {
+                revFilter = RevFilter.MERGE_BASE
+                markStart(listOf(commitWalk.lookupCommit(intoCommit), commitWalk.lookupCommit(fromCommit)))
+            }
+            .next()
+            ?: if(intoCommitIsOnlyCommit) intoCommit else throw NullMergeBaseException()
 
-        val commitLookup = RevWalk(git.repository)
-        val intoC = commitLookup.lookupCommit(intoCommit.id)
-        val fromC = commitLookup.lookupCommit(fromCommit.id)
+        git.checkout().setName(base.name).call()
 
-        if (intoC.name == fromC.name) throw InvalidMergeOperationException()
-
-        val walk = RevWalk(git.repository)
-        walk.revFilter = RevFilter.MERGE_BASE
-        walk.markStart(listOf(intoC, fromC))
-        val mergeBase = walk.next() ?: if(intoCommitIsOnlyCommit) intoCommit else throw NullMergeBaseException()
-
-        git.checkout().setName(mergeBase.name).call()
-
-        sendTitle("reading merge-base regions...")
         val ancestor = IOWorker.repositoryWorldNBTs(world)
 
-        val branch = initialBranch
-
-        git.checkout().setName(branch).call()
-
-        initialBranch = null
+        git.checkout().setName(intoBranch).call()
 
         try {
-            state = MERGING
+            state = COMPUTING
 
             sendTitle("start merging '$world'...")
             delay(500)
@@ -253,8 +209,9 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             WorldLoader.movePlayersTo(parent, world)
             WorldLoader.unload(parent, world)
             IOWorker.writeWorldAnvilToClient(clientRegions, world)
-            WorldLoader.load(parent, world)
+
             state = APPLYING_LIGHTS
+            WorldLoader.load(parent, world)
             WorldLightUpdater.updateLights(parent, world)
         } catch (exception: CancellationException) {
             state = RELOADING_WORLDS
@@ -270,10 +227,10 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         state = COMMITTING
 
         val actualSource =
-            if (fromC.name.startsWith(source)) source
-            else "$source(${fromC.name.substring(0 until 7)})"
+            if (fromCommit.name.startsWith(source)) source
+            else "$source(${fromCommit.name.substring(0 until 7)})"
 
-        val message = "'$w$actualSource$g' into '$w$branch$g' of $w$world$g"
+        val message = "'$w$actualSource$g' into '$w$intoBranch$g' of $w$world$g"
 
         git.add().addFilepattern(".").call()
 
@@ -283,6 +240,45 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             .call()
 
         return "${g}committed successful merge of $message"
+    }
+
+    private fun abort(): CommandExecuteResult {
+        return if (state > 0) {
+            parent.job?.cancel()
+            RESULT_ABORT_SUCCESS_SILENT
+        } else {
+            when (state) {
+                IDLE -> RESULT_ABORT_NOT_MERGING
+                APPLYING_LIGHTS -> RESULT_ABORT_LIGHT_UPDATING
+                RELOADING_WORLDS -> RESULT_ABORT_WORLD_LOADING
+                COMMITTING -> RESULT_ABORT_COMMITTING
+                else -> RESULT_ABORT_IMPOSSIBLE
+            }
+        }
+    }
+
+    private fun readAnvil(world: String, repo: Repository, checkout: String? = null): Pair<WorldAnvil, ObjectId> {
+        val git = Git(repo)
+
+        if (checkout != null) {
+            try {
+                git.checkout().setName(checkout).call()
+            } catch (e: GitAPIException) {
+                throw UnknownSourceException(checkout)
+            }
+        }
+
+        return if (repo.refDatabase.findRef("HEAD").name == "HEAD") {
+            Pair(IOWorker.repositoryWorldNBTs(world), repo.resolve(checkout))
+        } else {
+            val commits = git.log().setMaxCount(1).call().toList()
+            val commit =
+                if (commits.isNotEmpty()) commits[0]
+                else throw NoValidCommitsException()
+
+            sendTitle("reading regions...")
+            Pair(IOWorker.repositoryWorldNBTs(world), commit.id)
+        }
     }
 
     open class MergeException(m: String): Exception(m)
