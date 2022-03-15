@@ -257,7 +257,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             }
         }
 
-        return if (repo.refDatabase.findRef("HEAD").name == "HEAD") {
+        return if (repo.refDatabase.findRef("HEAD").target.name == "HEAD") {
             Pair(IOWorker.repositoryWorldNBTs(world), repo.resolve(checkout))
         } else {
             val commits = git.log().setMaxCount(1).call().toList()
