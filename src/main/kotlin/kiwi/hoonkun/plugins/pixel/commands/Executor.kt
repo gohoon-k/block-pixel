@@ -79,13 +79,15 @@ abstract class Executor(val parent: Entry) {
             listOf(arg)
         } else throw UnknownWorldException(arg)
 
+    private fun help(): CommandExecuteResult {
+        return CommandExecuteResult(true, help, recordTime = false)
+    }
+
     suspend fun doIt(sender: CommandSender?, args: List<String>): CommandExecuteResult {
+        if (args.isEmpty()) return help()
+
         globalSender = sender
-
-        if (args.isEmpty()) return CommandExecuteResult(true, help, recordTime = false)
-
         val result = exec(sender, args)
-
         globalSender = null
 
         return result
