@@ -15,6 +15,8 @@ class ChatUtils {
             '\\' to 5, '-' to 4, '_' to 4, ' ' to 3, '(' to 3, ')' to 3, '[' to 2, ']' to 2, '<' to 4, '>' to 4, '.' to 1, ':' to 1, ';' to 1, '|' to 1
         )
 
+        private const val maxWidth = 300
+
         private const val letterSpacing = 1
 
         fun String.ellipsizeChat(): String {
@@ -31,7 +33,7 @@ class ChatUtils {
                 width += (widths[this[index]] ?: 5) + letterSpacing
                 result += this[index]
 
-                if (width >= 300) {
+                if (width >= maxWidth) {
                     ellipsized = true
                     break
                 }
@@ -70,21 +72,18 @@ class ChatUtils {
             return "${if (ellipsized) "${ChatColor.GRAY}...${ChatColor.RESET}" else ""}$lastColor$result"
         }
 
+        fun String.appendRight(that: String): String {
+            val thatWidth = that.removeChatColor().sumOf { (widths[it] ?: 5) + letterSpacing }
+            val thisWidth = removeChatColor().sumOf { (widths[it] ?: 5) + letterSpacing }
+            val remainingWidth = maxWidth - (thatWidth + thisWidth) + 6
+            if (remainingWidth < 0) return "$this$that"
+            var spacing = ""
+            (0 until remainingWidth / (widths[' ']!! + letterSpacing)).forEach { _ -> spacing += ' ' }
+            return "$this$spacing$that"
+        }
+
         fun String.removeChatColor(): String {
-            var result = ""
-            var isColorValue = false
-            for (index in indices) {
-                if (this[index] == '§') {
-                    isColorValue = true
-                    continue
-                }
-                if (isColorValue) {
-                    isColorValue = false
-                    continue
-                }
-                result += this[index]
-            }
-            return result
+            return replace(Regex("§."), "")
         }
 
     }
