@@ -13,7 +13,10 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.plugin.java.JavaPlugin
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.NoHeadException
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
 import java.util.logging.Level
@@ -56,6 +59,7 @@ class Entry: JavaPlugin() {
     lateinit var repositories: MutableMap<String, Repository> private set
     lateinit var branches: MutableMap<String, MutableList<String>> private set
     lateinit var branch: MutableMap<String, String> private set
+    lateinit var lastCommit: MutableMap<String, RevCommit?> private set
 
     val repositoryKeys get() = repositories.keys.toMutableList()
     val availableWorldNames get() = server.worlds.map { it.name }.filter { it != VOID_WORLD_NAME && it != levelName }.toMutableList()
@@ -108,21 +112,7 @@ class Entry: JavaPlugin() {
             }
             ?: throw Exception("cannot create void world")
 
-        repositories = server.worlds
-            .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
-            .filter { it.exists() }
-            .associate { it.absoluteFile.parentFile.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
-            .toMutableMap()
-
-        branches = repositories
-            .map { (key, value) -> key to BranchUtils.get(value) }
-            .toMap()
-            .toMutableMap()
-
-        branch = repositories
-            .map { (key, value) -> key to value.branch }
-            .toMap()
-            .toMutableMap()
+        updateRepositories()
 
         WorldLoader.enable()
 
@@ -240,6 +230,45 @@ class Entry: JavaPlugin() {
         } else {
             executors[args[0]]?.autoComplete(remainingArgs)
         }
+    }
+
+    fun updateRepositories() {
+        repositories = server.worlds
+            .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
+            .filter { it.exists() }
+            .associate { it.absoluteFile.parentFile.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
+            .toMutableMap()
+
+        updateBranches()
+        updateBranch()
+        updateLastCommit()
+    }
+
+    fun updateBranches() {
+        branches = repositories
+            .map { (key, value) -> key to BranchUtils.get(value) }
+            .toMap()
+            .toMutableMap()
+    }
+
+    fun updateBranch() {
+        branch = repositories
+            .map { (key, value) -> key to value.branch }
+            .toMap()
+            .toMutableMap()
+    }
+
+    fun updateLastCommit() {
+        lastCommit = repositories
+            .map { (key, value) ->
+                try {
+                    key to Git(value).log().setMaxCount(1).call().iterator().next()
+                } catch (e: NoHeadException) {
+                    key to null
+                }
+            }
+            .toMap()
+            .toMutableMap()
     }
 
 }

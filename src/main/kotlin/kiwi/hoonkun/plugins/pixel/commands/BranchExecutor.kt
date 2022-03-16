@@ -62,8 +62,8 @@ class BranchExecutor(parent: Entry): Executor(parent) {
                 .setCreateBranch(true)
                 .call()
 
-            parent.branches[args[0]]?.add(args[1])
-            parent.branch[args[0]] = args[1]
+            parent.updateBranches()
+            parent.updateBranch()
         } catch (exception: GitAPIException) {
             return createGitApiFailedResult("branch", exception)
         }
@@ -86,7 +86,7 @@ class BranchExecutor(parent: Entry): Executor(parent) {
             return createGitApiFailedResult("delete branch", e)
         }
 
-        parent.branches[args[0]]?.remove(args[2])
+        parent.updateBranches()
 
         return CommandExecuteResult(true, "${g}successfully deleted branch '$w${toDelete}$g'", false)
     }

@@ -50,7 +50,7 @@ class CheckoutExecutor(parent: Entry): Executor(parent) {
                 return CommandExecuteResult(false, "failed to checkout, status is '${command.result.status.name}'")
             }
 
-            parent.branch[world] = repo.branch
+            parent.updateBranch()
 
             IOWorker.replaceFromVersionControl(parent, world)
         } catch (exception: GitAPIException) {

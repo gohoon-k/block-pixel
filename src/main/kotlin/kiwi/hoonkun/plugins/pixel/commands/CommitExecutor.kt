@@ -77,6 +77,8 @@ class CommitExecutor(parent: Entry): Executor(parent) {
             val committed = targets.joinToString(", ") { "$w$it(${parent.branch[it]})$g" }
             val resultHashes = hashes.joinToString(", ") { "$w$it$g" }
 
+            parent.updateLastCommit()
+
             CommandExecuteResult(true, "${g}successfully committed world [$committed] with hash [$resultHashes]")
         } catch (exception: GitAPIException) {
             createGitApiFailedResult("commit", exception)

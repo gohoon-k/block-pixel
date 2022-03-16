@@ -40,7 +40,7 @@ class InitializeExecutor(parent: Entry): Executor(parent) {
             val repository = FileRepositoryBuilder.create(gitDir)
             repository.create()
 
-            parent.repositories[it] = repository
+            parent.updateRepositories()
 
         }
 
