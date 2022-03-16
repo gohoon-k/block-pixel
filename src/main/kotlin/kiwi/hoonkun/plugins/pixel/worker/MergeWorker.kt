@@ -56,6 +56,15 @@ class MergeWorker {
                 Executor.sendTitle("merging region[${location.x}][${location.z}]")
 
                 val mergedChunks = mutableListOf<Terrain>()
+
+                val fromTerrains = from.terrain[location]
+                val intoTerrains = into.terrain[location]
+
+                if (fromTerrains == intoTerrains && intoTerrains != null) {
+                    mergedChunks.addAll(intoTerrains)
+                    return@forEach
+                }
+
                 associateChunk(from.terrain[location], into.terrain[location], ancestor.terrain[location])
                     .forEach { associatedMap ->
                         throwIfInactive(job)
@@ -71,12 +80,16 @@ class MergeWorker {
                         } else if (fromC == null && intoC != null) {
                             mergedChunks.add(intoC)
                         } else if (fromC != null && intoC != null) {
-                            val anceC = associatedChunks.ancestor ?: when (mode) {
-                                MergeMode.KEEP -> fromC
-                                MergeMode.REPLACE -> intoC
-                            }
+                            if (fromC == intoC) {
+                                mergedChunks.add(intoC)
+                            } else {
+                                val anceC = associatedChunks.ancestor ?: when (mode) {
+                                    MergeMode.KEEP -> fromC
+                                    MergeMode.REPLACE -> intoC
+                                }
 
-                            mergedChunks.add(mergeChunk(fromC, intoC, anceC, mode))
+                                mergedChunks.add(mergeChunk(fromC, intoC, anceC, mode))
+                            }
                         }
                     }
 
@@ -357,11 +370,13 @@ class MergeWorker {
                     val anceB = if (anceM.isEmpty()) anceP[0] else anceM[block]
                     val anceBE = anceE.find { it.x == x && it.z == z && it.y == y }
 
+                    var appliedFromSource = false
                     val appliedBlock = if (
                         !blockEquals(fromB, fromBE, intoB, intoBE) &&
                         !blockEquals(fromB, fromBE, anceB, anceBE) &&
                         !blockEquals(anceB, anceBE, intoB, intoBE)
                     ) {
+                        appliedFromSource = mode == MergeMode.REPLACE
                         when (mode) {
                             MergeMode.KEEP -> applyIt(intoB, intoE)
                             MergeMode.REPLACE -> applyIt(fromB, fromE)
@@ -373,13 +388,14 @@ class MergeWorker {
                         if (fromB == anceB) {
                             applyIt(intoB, intoE)
                         } else {
+                            appliedFromSource = true
                             applyIt(fromB, fromE)
                         }
                     } else {
                         applyIt(intoB, intoE)
                     }
 
-                    if (appliedBlock.isEmittingLights()) {
+                    if (appliedFromSource && appliedBlock.isEmittingLights()) {
                         WorldLightUpdater.addTarget(Triple(x, y, z))
                     }
                 }

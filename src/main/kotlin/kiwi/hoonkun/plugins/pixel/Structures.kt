@@ -59,6 +59,30 @@ class Terrain(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
         set(value) {
             nbt["block_entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "block_entities")
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Terrain
+
+        if (location != other.location) return false
+        if (xPos != other.xPos) return false
+        if (zPos != other.zPos) return false
+        if (sections != other.sections) return false
+        if (blockEntities != other.blockEntities) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = location.hashCode()
+        result = 31 * result + xPos
+        result = 31 * result + zPos
+        result = 31 * result + sections.hashCode()
+        result = 31 * result + blockEntities.hashCode()
+        return result
+    }
 }
 
 data class Section(private val nbt: CompoundTag) {
@@ -76,6 +100,26 @@ data class Section(private val nbt: CompoundTag) {
         set(value) {
             if (value == null) nbt.value.remove("SkyLight")
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Section
+
+        if (y != other.y) return false
+        if (blockStates != other.blockStates) return false
+        if (skyLight != other.skyLight) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = y.toInt()
+        result = 31 * result + blockStates.hashCode()
+        result = 31 * result + (skyLight?.hashCode() ?: 0)
+        return result
+    }
 }
 
 data class BlockStates(private val nbt: CompoundTag) {
@@ -91,6 +135,24 @@ data class BlockStates(private val nbt: CompoundTag) {
         set(value) {
             nbt["data"] = LongArrayTag(value, "data")
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BlockStates
+
+        if (palette != other.palette) return false
+        if (!data.contentEquals(other.data)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = palette.hashCode()
+        result = 31 * result + data.contentHashCode()
+        return result
+    }
 }
 
 data class Palette(val nbt: CompoundTag) {
