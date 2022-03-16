@@ -46,7 +46,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             CommandExecuteResult(false, "failed to merge because of internal exception.")
 
         val RESULT_ABORT_SUCCESS =
-            CommandExecuteResult(true, "merge operation is successfully aborted.")
+            CommandExecuteResult(true, "merge operation is successfully aborted.", false)
 
         val RESULT_ABORT_SUCCESS_SILENT =
             CommandExecuteResult(true, "dummy. silent message.")
@@ -204,7 +204,6 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             WorldLightUpdater.updateLights(parent, world)
         } catch (exception: CancellationException) {
             state = RELOADING_WORLDS
-            sendTitle("aborting merge operation...")
             return null
         }
 
@@ -234,6 +233,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
     private fun abort(): CommandExecuteResult {
         return if (state > 0) {
             parent.job?.cancel()
+            sendTitle("aborting merge operation...")
             RESULT_ABORT_SUCCESS_SILENT
         } else {
             when (state) {
