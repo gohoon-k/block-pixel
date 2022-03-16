@@ -43,57 +43,54 @@ class MergeWorker {
         }
 
         fun merge(job: Job?, from: WorldAnvil, into: WorldAnvil, ancestor: WorldAnvil, mode: MergeMode): WorldAnvil {
-            val mergedChunk: MutableAnvil<Terrain> = mutableMapOf()
+            val mergedTerrainAnvil: MutableAnvil<Terrain> = mutableMapOf()
 
-            Executor.sendTitle("merging chunks...")
+            Executor.sendTitle("merging terrains...")
 
-            val (newChunk, existsChunk) =
+            val (createdTerrains, existsTerrains) =
                 from.terrain.entries.classificationByBoolean { !into.terrain.containsKey(it.key) }
 
-            newChunk.forEach { mergedChunk[it.key] = it.value.toMutableList() }
+            createdTerrains.forEach { mergedTerrainAnvil[it.key] = it.value.toMutableList() }
 
-            existsChunk.map { it.key }.forEach { location ->
-                Executor.sendTitle("merging region[${location.x}][${location.z}]")
-
-                val mergedChunks = mutableListOf<Terrain>()
+            existsTerrains.map { it.key }.forEach { location ->
+                val mergedTerrains = mutableListOf<Terrain>()
 
                 val fromTerrains = from.terrain[location]
                 val intoTerrains = into.terrain[location]
 
                 if (fromTerrains == intoTerrains && intoTerrains != null) {
-                    mergedChunks.addAll(intoTerrains)
+                    mergedTerrains.addAll(intoTerrains)
                     return@forEach
                 }
 
-                associateChunk(from.terrain[location], into.terrain[location], ancestor.terrain[location])
-                    .forEach { associatedMap ->
-                        throwIfInactive(job)
+                associateTerrain(
+                    from.terrain[location],
+                    into.terrain[location],
+                    ancestor.terrain[location]
+                ).forEach { associatedMap ->
+                    throwIfInactive(job)
 
-                        Executor.sendTitle("merging terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${associatedMap.key.x}$g][$w${associatedMap.key.z}$g]")
+                    Executor.sendTitle("merging terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${associatedMap.key.x}$g][$w${associatedMap.key.z}$g]")
 
-                        val associatedChunks = associatedMap.value
-                        val fromC = associatedChunks.from
-                        val intoC = associatedChunks.into
+                    val associatedTerrains = associatedMap.value
+                    val fromT = associatedTerrains.from
+                    val intoT = associatedTerrains.into
 
-                        if (fromC != null && intoC == null) {
-                            mergedChunks.add(fromC)
-                        } else if (fromC == null && intoC != null) {
-                            mergedChunks.add(intoC)
-                        } else if (fromC != null && intoC != null) {
-                            if (fromC == intoC) {
-                                mergedChunks.add(intoC)
-                            } else {
-                                val anceC = associatedChunks.ancestor ?: when (mode) {
-                                    MergeMode.KEEP -> fromC
-                                    MergeMode.REPLACE -> intoC
-                                }
-
-                                mergedChunks.add(mergeChunk(fromC, intoC, anceC, mode))
-                            }
+                    if (fromT != null && intoT == null) {
+                        mergedTerrains.add(fromT)
+                    } else if ((fromT == null && intoT != null) || (fromT != null && intoT != null && fromT == intoT)) {
+                        mergedTerrains.add(intoT)
+                    } else if (fromT != null && intoT != null) {
+                        val anceT = associatedTerrains.ancestor ?: when (mode) {
+                            MergeMode.KEEP -> fromT
+                            MergeMode.REPLACE -> intoT
                         }
-                    }
 
-                mergedChunk[location] = mergedChunks
+                        mergedTerrains.add(mergeTerrain(fromT, intoT, anceT, mode))
+                    }
+                }
+
+                mergedTerrainAnvil[location] = mergedTerrains
             }
 
             Executor.sendTitle("merging entities...")
@@ -134,7 +131,7 @@ class MergeWorker {
             val fVillagers = fEntities.filter { it.id == "minecraft:villager" }
             val iVillagers = iEntities.filter { it.id == "minecraft:villager" }
 
-            val mergedMutableEntity: MutableAnvil<MutableEntity> = mutableMapOf()
+            val mergedMutableEntityAnvil: MutableAnvil<MutableEntity> = mutableMapOf()
 
             allMergedEntities.forEach { entityEach ->
                 throwIfInactive(job)
@@ -149,10 +146,10 @@ class MergeWorker {
                     floor(entityEach.pos[2] / 16.0 / 32.0).toInt()
                 )
 
-                if (!mergedMutableEntity.containsKey(anvilLocation))
-                    mergedMutableEntity[anvilLocation] = mutableListOf()
+                if (!mergedMutableEntityAnvil.containsKey(anvilLocation))
+                    mergedMutableEntityAnvil[anvilLocation] = mutableListOf()
 
-                var entity = mergedMutableEntity[anvilLocation]!!.find { it.location == nbtLocation }
+                var entity = mergedMutableEntityAnvil[anvilLocation]!!.find { it.location == nbtLocation }
                 if (entity == null) {
                     val oldEntity = from.entity[anvilLocation]!!.find { it.location == nbtLocation }
                         ?: into.entity[anvilLocation]!!.find { it.location == nbtLocation }
@@ -164,13 +161,13 @@ class MergeWorker {
                             dataVersion = oldEntity.dataVersion
                             entities = mutableListOf()
                         }
-                    mergedMutableEntity[anvilLocation]!!.add(entity)
+                    mergedMutableEntityAnvil[anvilLocation]!!.add(entity)
                 }
 
                 entity.entities!!.add(entityEach)
             }
 
-            val mergedEntity: Anvil<Entity> = mergedMutableEntity.entries.associate {
+            val mergedEntityAnvil: Anvil<Entity> = mergedMutableEntityAnvil.entries.associate {
                 it.key to it.value.map { mutableEntity -> mutableEntity.toEntity() }
             }
 
@@ -258,7 +255,7 @@ class MergeWorker {
                 poiRecord.freeTickets = newFreeTickets
             }
 
-            val mergedMutablePoi: MutableAnvil<MutablePoi> = mutableMapOf()
+            val mergedMutablePoiAnvil: MutableAnvil<MutablePoi> = mutableMapOf()
 
             allMergedRecords.forEachIndexed { index, record ->
                 throwIfInactive(job)
@@ -277,10 +274,10 @@ class MergeWorker {
 
                 val sectionY = floor(record.pos[1] / 16.0).toInt()
 
-                if (!mergedMutablePoi.containsKey(anvilLocation))
-                    mergedMutablePoi[anvilLocation] = mutableListOf()
+                if (!mergedMutablePoiAnvil.containsKey(anvilLocation))
+                    mergedMutablePoiAnvil[anvilLocation] = mutableListOf()
 
-                var poi = mergedMutablePoi[anvilLocation]!!.find { poi -> nbtLocation == poi.location }
+                var poi = mergedMutablePoiAnvil[anvilLocation]!!.find { poi -> nbtLocation == poi.location }
 
                 if (poi == null) {
                     val timestamp = from.poi[anvilLocation]!!.find { nbtLocation == it.location }?.timestamp
@@ -288,7 +285,7 @@ class MergeWorker {
                         ?: throw Exception("cannot find poi in 'from' and 'into'.")
 
                     poi = MutablePoi(nbtLocation, timestamp, CompoundTag(mutableMapOf(), null))
-                    mergedMutablePoi[anvilLocation]!!.add(poi)
+                    mergedMutablePoiAnvil[anvilLocation]!!.add(poi)
                 }
 
                 if (poi.sections == null)
@@ -309,30 +306,30 @@ class MergeWorker {
                 poi.sections!![sectionY]!!.records!!.add(record)
             }
 
-            val mergedPoi: Anvil<Poi> = mergedMutablePoi.entries.associate {
+            val mergedPoiAnvil: Anvil<Poi> = mergedMutablePoiAnvil.entries.associate {
                 it.key to it.value.map { mutablePoi -> mutablePoi.toPoi() }
             }
 
-            return WorldAnvil(mergedChunk, mergedEntity, mergedPoi)
+            return WorldAnvil(mergedTerrainAnvil, mergedEntityAnvil, mergedPoiAnvil)
         }
 
-        private fun mergeChunk(
-            fromChunk: Terrain,
-            intoChunk: Terrain,
-            ancestorChunk: Terrain,
+        private fun mergeTerrain(
+            fromTerrain: Terrain,
+            intoTerrain: Terrain,
+            ancestorTerrain: Terrain,
             mode: MergeMode
         ): Terrain {
-            val resultChunk = Terrain(intoChunk.timestamp, intoChunk.nbt.clone(intoChunk.nbt.name))
+            val resultTerrain = Terrain(intoTerrain.timestamp, intoTerrain.nbt.clone(intoTerrain.nbt.name))
 
             val resultE = mutableListOf<BlockEntity>()
-            val intoE = intoChunk.blockEntities
-            val fromE = fromChunk.blockEntities
-            val anceE = ancestorChunk.blockEntities
+            val intoE = intoTerrain.blockEntities
+            val fromE = fromTerrain.blockEntities
+            val anceE = ancestorTerrain.blockEntities
 
-            (0 until intoChunk.sections.size).forEach { sectionIndex ->
-                val fromS = fromChunk.sections[sectionIndex]
-                val intoS = intoChunk.sections[sectionIndex]
-                val anceS = ancestorChunk.sections[sectionIndex]
+            (0 until intoTerrain.sections.size).forEach { sectionIndex ->
+                val fromS = fromTerrain.sections[sectionIndex]
+                val intoS = intoTerrain.sections[sectionIndex]
+                val anceS = ancestorTerrain.sections[sectionIndex]
 
                 val fromP = fromS.blockStates.palette
                 val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
@@ -346,7 +343,7 @@ class MergeWorker {
                 val resultP = mutableListOf<Palette>()
 
                 (0 until 4096).forEach { block ->
-                    val (x, y, z) = coordinate(intoChunk.location, intoS.y, block)
+                    val (x, y, z) = coordinate(intoTerrain.location, intoS.y, block)
 
                     val applyIt: (Palette, List<BlockEntity>) -> Palette = apply@{ applyB, applyE ->
                         resultP.add(applyB)
@@ -404,14 +401,14 @@ class MergeWorker {
                     if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
                     else LongArray(0)
 
-                resultChunk.sections[sectionIndex].blockStates.data = resultD
-                resultChunk.sections[sectionIndex].blockStates.palette = resultPS
-                resultChunk.sections[sectionIndex].skyLight = null
+                resultTerrain.sections[sectionIndex].blockStates.data = resultD
+                resultTerrain.sections[sectionIndex].blockStates.palette = resultPS
+                resultTerrain.sections[sectionIndex].skyLight = null
             }
 
-            resultChunk.blockEntities = resultE
+            resultTerrain.blockEntities = resultE
 
-            return resultChunk
+            return resultTerrain
         }
 
         private fun <T> select(
@@ -462,7 +459,7 @@ class MergeWorker {
             return Pair(a, b)
         }
 
-        private fun associateChunk(from: List<Terrain>?, into: List<Terrain>?, ancestor: List<Terrain>?): Map<ChunkLocation, AssociatedChunk> {
+        private fun associateTerrain(from: List<Terrain>?, into: List<Terrain>?, ancestor: List<Terrain>?): Map<ChunkLocation, AssociatedChunk> {
             val chunkMap = mutableMapOf<ChunkLocation, AssociatedChunk>()
             from?.forEach {
                 if (!chunkMap.containsKey(it.location)) chunkMap[it.location] = AssociatedChunk()
