@@ -1,36 +1,39 @@
 package kiwi.hoonkun.plugins.pixel.utils
 
 import org.bukkit.ChatColor
+import kotlin.math.ceil
 
 class ChatUtils {
 
     companion object {
 
         private val widths = mapOf(
-            'a' to 5, 'b' to 5, 'c' to 5, 'd' to 5, 'e' to 5, 'f' to 4, 'g' to 5, 'h' to 5, 'i' to 1, 'j' to 5, 'k' to 4, 'l' to 2, 'm' to 5,
-            'n' to 5, 'o' to 5, 'p' to 5, 'q' to 5, 'r' to 5, 's' to 5, 't' to 3, 'u' to 4, 'v' to 5, 'w' to 5, 'x' to 5, 'y' to 5, 'z' to 5,
-            'A' to 5, 'B' to 5, 'C' to 5, 'D' to 5, 'E' to 5, 'F' to 5, 'G' to 5, 'H' to 5, 'I' to 3, 'J' to 5, 'K' to 5, 'L' to 5, 'M' to 5,
-            'N' to 5, 'O' to 5, 'P' to 5, 'Q' to 5, 'R' to 5, 'S' to 5, 'T' to 5, 'U' to 5, 'V' to 5, 'W' to 5, 'X' to 5, 'Y' to 5, 'Z' to 5,
-            '1' to 5, '2' to 5, '3' to 5, '4' to 5, '5' to 5, '6' to 5, '7' to 5, '8' to 5, '9' to 5, '0' to 5, '"' to 3, '\'' to 1, '/' to 5,
-            '\\' to 5, '-' to 4, '_' to 4, ' ' to 3, '(' to 3, ')' to 3, '[' to 2, ']' to 2, '<' to 4, '>' to 4, '.' to 1, ':' to 1, ';' to 1, '|' to 1
+            'a' to 5f, 'b' to 5f, 'c' to 5f, 'd' to 5f, 'e' to 5f, 'f' to 4f, 'g' to 5f, 'h' to 5f, 'i' to 1f, 'j' to 5f, 'k' to 4f, 'l' to 2f, 'm' to 5f,
+            'n' to 5f, 'o' to 5f, 'p' to 5f, 'q' to 5f, 'r' to 5f, 's' to 5f, 't' to 3f, 'u' to 4f, 'v' to 5f, 'w' to 5f, 'x' to 5f, 'y' to 5f, 'z' to 5f,
+            'A' to 5f, 'B' to 5f, 'C' to 5f, 'D' to 5f, 'E' to 5f, 'F' to 5f, 'G' to 5f, 'H' to 5f, 'I' to 3f, 'J' to 5f, 'K' to 5f, 'L' to 5f, 'M' to 5f,
+            'N' to 5f, 'O' to 5f, 'P' to 5f, 'Q' to 5f, 'R' to 5f, 'S' to 5f, 'T' to 5f, 'U' to 5f, 'V' to 5f, 'W' to 5f, 'X' to 5f, 'Y' to 5f, 'Z' to 5f,
+            '1' to 5f, '2' to 5f, '3' to 5f, '4' to 5f, '5' to 5f, '6' to 5f, '7' to 5f, '8' to 5f, '9' to 5f, '0' to 5f, '"' to 3f, '\'' to 1f, '/' to 5f,
+            '\\' to 5f, '-' to 4f, '_' to 4f, ' ' to 3f, '(' to 3f, ')' to 3f, '[' to 2f, ']' to 2f, '<' to 4f, '>' to 4f, '.' to 1f, ':' to 1f, ';' to 1f, '|' to 1f
         )
 
         private const val maxWidth = 300
 
-        private const val letterSpacing = 1
+        private const val defaultWidth = 20f / 3f
+
+        private const val letterSpacing = 1f
 
         fun String.ellipsizeChat(): String {
             var result = ""
-            var width = 0
+            var width = 0f
             var ellipsized = false
             for (index in indices) {
                 if (this[index] == '§') {
                     result += this[index]
-                    width -= (widths[this[index + 1]] ?: 5) + letterSpacing
+                    width -= (widths[this[index + 1]] ?: defaultWidth) + letterSpacing
                     continue
                 }
 
-                width += (widths[this[index]] ?: 5) + letterSpacing
+                width += (widths[this[index]] ?: defaultWidth) + letterSpacing
                 result += this[index]
 
                 if (width >= maxWidth) {
@@ -43,18 +46,18 @@ class ChatUtils {
 
         fun String.ellipsizeChatHead(): String {
             var result = ""
-            var width = 0
+            var width = 0f
             var ellipsized = false
             var chatColorIndex = length
             for (index in length - 1 downTo 0) {
                 if (this[index] == '§') {
-                    width -= widths[result[0]] ?: 5
+                    width -= widths[result[0]] ?: defaultWidth
                     result = "${this[index]}$result"
                     chatColorIndex = index
                     continue
                 }
 
-                width += (widths[this[index]] ?: 5) + letterSpacing
+                width += (widths[this[index]] ?: defaultWidth) + letterSpacing
                 result = "${this[index]}$result"
 
                 if (index > 1 && this[index - 1] != '§' && width >= 300) {
@@ -73,12 +76,12 @@ class ChatUtils {
         }
 
         fun String.appendRight(that: String): String {
-            val thatWidth = that.removeChatColor().sumOf { (widths[it] ?: 5) + letterSpacing }
-            val thisWidth = removeChatColor().sumOf { (widths[it] ?: 5) + letterSpacing }
+            val thatWidth = that.removeChatColor().sumOf { ((widths[it] ?: defaultWidth) + letterSpacing).toDouble() }.toFloat()
+            val thisWidth = removeChatColor().sumOf { ((widths[it] ?: defaultWidth) + letterSpacing).toDouble() }.toFloat()
             val remainingWidth = maxWidth - (thatWidth + thisWidth) + 6
             if (remainingWidth < 0) return "$this$that"
             var spacing = ""
-            (0 until remainingWidth / (widths[' ']!! + letterSpacing)).forEach { _ -> spacing += ' ' }
+            (0 until ceil(remainingWidth / (widths[' ']!! + letterSpacing)).toInt()).forEach { _ -> spacing += ' ' }
             return "$this$spacing$that"
         }
 
