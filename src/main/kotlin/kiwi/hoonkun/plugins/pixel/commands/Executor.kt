@@ -32,6 +32,7 @@ abstract class Executor(val parent: Entry) {
         val w = ChatColor.WHITE
         val r = ChatColor.RED
         val y = ChatColor.YELLOW
+        val dg = ChatColor.DARK_GRAY
 
         val RESULT_UNCOMMITTED =
             CommandExecuteResult(false, "you specified that you didn't committed changes. please commit them first.")

@@ -2,6 +2,7 @@ package kiwi.hoonkun.plugins.pixel.commands
 
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.utils.BranchUtils.Companion.findIndexes
+import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.appendRight
 import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.ellipsizeChat
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
@@ -10,6 +11,7 @@ import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.errors.NoHeadException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.ceil
 
 class ListExecutor(parent: Entry): Executor(parent) {
 
@@ -48,13 +50,13 @@ class ListExecutor(parent: Entry): Executor(parent) {
         val page = if (args.size == 3) {
             args[2].toIntOrNull() ?: return RESULT_INVALID_PAGE
         } else {
-            0
+            1
         }
 
         val git = Git(repo)
 
         val lists = when (what) {
-            "commits" -> printCommits(git, page)
+            "commits" -> printCommits(git, page - 1)
             "branches" -> printBranches(git)
             else -> ""
         }
@@ -79,7 +81,8 @@ class ListExecutor(parent: Entry): Executor(parent) {
 
         val start = page * pageSize + 1
         val end = ((page + 1) * pageSize).coerceAtMost(commits.size)
-        val header = "$g[$w$start-$end of ${commits.size} commits ${g}in branch $w'$branch'$g]"
+        val pageIndicator = "$dg[$w${page + 1}$dg/$g${ceil(commits.size / pageSize.toFloat()).toInt()}$dg]"
+        val header = "$g[$w$start-$end of ${commits.size} commits ${g}in branch $w'$branch'$g]".appendRight(pageIndicator)
         val commitsString = commits.chunked(pageSize)[page].joinToString("\n") {
             val date = SimpleDateFormat("MM.dd HH:mm").format(Date(it.commitTime * 1000L))
             val hash = it.name.substring(0, 7)
