@@ -97,9 +97,9 @@ class MergeWorker {
 
             val allMergedEntities = mutableListOf<EntityEach>()
 
-            val fEntities = from.entity.values.flatten().map { it.entities }.flatten()
-            val iEntities = into.entity.values.flatten().map { it.entities }.flatten()
-            val oEntities = ancestor.entity.values.flatten().map { it.entities }.flatten()
+            val fEntities = from.entity.values.flatten().flatMap { it.entities }
+            val iEntities = into.entity.values.flatten().flatMap { it.entities }
+            val oEntities = ancestor.entity.values.flatten().flatMap { it.entities }
 
             val aEntities = setOf(
                 *fEntities.toTypedArray(),
@@ -348,7 +348,7 @@ class MergeWorker {
                 (0 until 4096).forEach { block ->
                     val (x, y, z) = coordinate(intoTerrain.location, intoS.y, block)
 
-                    val applyIt: (Palette, List<BlockEntity>) -> Palette = apply@{ applyB, applyE ->
+                    val applyIt: (Palette, List<BlockEntity>) -> Palette = apply@ { applyB, applyE ->
                         resultP.add(applyB)
                         applyE.find { it.x == x && it.z == z && it.y == y }
                             ?.also { resultE.add(it) }
@@ -443,13 +443,11 @@ class MergeWorker {
         }
 
         private fun flattenRecords(poi: Anvil<Poi>): List<PoiRecord> {
-            return poi.values.flatten()
-                .map { it.sections.values.toTypedArray() }
-                .toTypedArray()
+            return poi.values.asSequence()
                 .flatten()
-                .map { it.records.toTypedArray() }
-                .toTypedArray()
-                .flatten()
+                .flatMap { it.sections.values }
+                .flatMap { it.records }
+                .toList()
         }
 
         private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
