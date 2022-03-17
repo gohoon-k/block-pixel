@@ -329,6 +329,9 @@ class MergeWorker {
             (0 until intoTerrain.sections.size).forEach { sectionIndex ->
                 val fromS = fromTerrain.sections[sectionIndex]
                 val intoS = intoTerrain.sections[sectionIndex]
+
+                if (fromS == intoS) return@forEach
+
                 val anceS = ancestorTerrain.sections[sectionIndex]
 
                 val fromP = fromS.blockStates.palette
