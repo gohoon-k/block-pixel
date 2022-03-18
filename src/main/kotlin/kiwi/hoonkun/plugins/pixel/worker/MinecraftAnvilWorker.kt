@@ -124,6 +124,8 @@ class MinecraftAnvilWorker {
         }
 
         fun decompress(region: ByteArray, headerOffset: Int): Pair<Int, ByteBuffer>? {
+            if (region.isEmpty()) return null
+
             val offset = ByteBuffer.wrap(byteArrayOf(0, region[headerOffset], region[headerOffset + 1], region[headerOffset + 2])).int * 4096
             val sectorCount = ByteBuffer.wrap(byteArrayOf(0, 0, 0, region[headerOffset + 3])).int * 4096
 
