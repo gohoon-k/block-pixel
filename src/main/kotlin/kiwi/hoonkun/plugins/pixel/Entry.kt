@@ -25,8 +25,9 @@ class Entry: JavaPlugin() {
 
     companion object {
 
-        lateinit var versionedFolder: File
+        lateinit var repositoryFolder: File
         lateinit var clientFolder: File
+        lateinit var mergeFolder: File
 
         lateinit var levelName: String
 
@@ -69,7 +70,8 @@ class Entry: JavaPlugin() {
 
         if (!dataFolder.exists()) dataFolder.mkdirs()
 
-        versionedFolder = File("${dataFolder.absolutePath}/repositories")
+        mergeFolder = File("${dataFolder.absolutePath}/merge_workspace")
+        repositoryFolder = File("${dataFolder.absolutePath}/repositories")
         clientFolder = dataFolder.absoluteFile.parentFile.parentFile
 
         managers = File("${dataFolder.absolutePath}/pixel.managers")
@@ -234,7 +236,7 @@ class Entry: JavaPlugin() {
 
     fun updateRepositories() {
         repositories = server.worlds
-            .map { File("${versionedFolder.absolutePath}/${it.name}/.git") }
+            .map { File("${repositoryFolder.absolutePath}/${it.name}/.git") }
             .filter { it.exists() }
             .associate { it.absoluteFile.parentFile.name to FileRepositoryBuilder().apply { gitDir = it }.build() }
             .toMutableMap()

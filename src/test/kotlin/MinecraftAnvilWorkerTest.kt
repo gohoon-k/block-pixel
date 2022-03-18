@@ -3,7 +3,7 @@ import io.kotlintest.shouldNotBe
 import io.kotlintest.specs.StringSpec
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.nbt.tag.IntTag
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.readFiles
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvilFormat
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
 import java.io.File
@@ -19,7 +19,7 @@ class MinecraftAnvilWorkerTest: StringSpec() {
         val testAnvilFiles = arrayOf(regionFile)
 
         "convert between region and client region" {
-            val regions1 = testAnvilFiles.read().toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }
+            val regions1 = readFiles(testAnvilFiles).toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }
 
             val version1 = getDataVersion(regions1)
 

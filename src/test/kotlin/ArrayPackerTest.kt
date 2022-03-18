@@ -6,7 +6,7 @@ import kiwi.hoonkun.plugins.pixel.Terrain
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.ListTag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.LongArrayTag
-import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.read
+import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.readFiles
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toAnvil
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
@@ -23,7 +23,7 @@ class ArrayPackerTest: StringSpec() {
         val regionFile = File(uri)
         val testAnvilFiles = arrayOf(regionFile)
 
-        val chunks = testAnvilFiles.read().toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }[testRegionLocation]!!
+        val chunks = readFiles(testAnvilFiles).toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }[testRegionLocation]!!
 
         "unpack and pack block_states.data" {
 

@@ -117,7 +117,7 @@ class WorldLoader {
         }
 
         fun enable() {
-            val datafile = File("${Entry.versionedFolder.absolutePath}/../pixel.players_from")
+            val datafile = File("${Entry.repositoryFolder.absolutePath}/../pixel.players_from")
             if (!datafile.exists()) datafile.createNewFile()
 
             val compressedBytes = datafile.readBytes()
@@ -134,7 +134,7 @@ class WorldLoader {
         }
 
         fun disable() {
-            val datafile = File("${Entry.versionedFolder.absolutePath}/../pixel.players_from")
+            val datafile = File("${Entry.repositoryFolder.absolutePath}/../pixel.players_from")
             val content = playersFrom.entries.joinToString("\n ") { "${it.key} from ${it.value}" }
 
             if (content.isEmpty()) {

@@ -3,11 +3,10 @@ package kiwi.hoonkun.plugins.pixel.commands
 import kiwi.hoonkun.plugins.pixel.Entry
 import kiwi.hoonkun.plugins.pixel.WorldAnvil
 import kiwi.hoonkun.plugins.pixel.utils.ChatUtils.Companion.removeChatColor
-import kiwi.hoonkun.plugins.pixel.worker.IOWorker
-import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
+import kiwi.hoonkun.plugins.pixel.worker.*
+import kiwi.hoonkun.plugins.pixel.worker.MergeIOWorker.Companion.copyTerrains
+import kiwi.hoonkun.plugins.pixel.worker.MergeIOWorker.Companion.writeToClient
 import kiwi.hoonkun.plugins.pixel.worker.MinecraftAnvilWorker.Companion.toWorldAnvilFormat
-import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater
-import kiwi.hoonkun.plugins.pixel.worker.WorldLoader
 import kotlinx.coroutines.delay
 import org.bukkit.command.CommandSender
 import org.eclipse.jgit.api.Git
@@ -83,8 +82,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         val world = args[0]
         val sourceArg = args[1]
         val mode = when (args[2]) {
-            "keep" -> MergeWorker.Companion.MergeMode.KEEP
-            "replace" -> MergeWorker.Companion.MergeMode.REPLACE
+            "keep" -> MergeWorker.MergeMode.KEEP
+            "replace" -> MergeWorker.MergeMode.REPLACE
             else -> return RESULT_INVALID_MERGE_MODE
         }
         val commitConfirm = args[3]
@@ -157,15 +156,15 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         repo: Repository,
         source: String,
         world: String,
-        mode: MergeWorker.Companion.MergeMode
+        mode: MergeWorker.MergeMode
     ): String? {
         val git = Git(repo)
 
         val intoBranch = repo.branch
         val intoCommitIsOnlyCommit = git.log().call().toList().size == 1
 
-        val (into, intoCommit) = readAnvil(world, repo)
-        val (from, fromCommit) = readAnvil(world, repo, source)
+        val (into, intoCommit) = readAnvil(world, repo, MergeWorker.TargetType.CURRENT)
+        val (from, fromCommit) = readAnvil(world, repo, MergeWorker.TargetType.SOURCE, source)
 
         if (intoCommit.name == fromCommit.name) throw InvalidMergeOperationException()
 
@@ -181,7 +180,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         git.checkout().setName(base.name).call()
 
-        val ancestor = IOWorker.repositoryWorldNBTs(world)
+        copyTerrains(world, MergeWorker.TargetType.BASE)
+        val ancestor = MergeIOWorker.repositoryWorldNBTs(world)
 
         git.checkout().setName(intoBranch).call()
 
@@ -197,7 +197,9 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             state = RELOADING_WORLDS
             WorldLoader.movePlayersTo(parent, world)
             WorldLoader.unload(parent, world)
-            IOWorker.writeWorldAnvilToClient(clientRegions, world)
+
+            clientRegions.writeToClient(world)
+            MergeIOWorker.writeTerrainsToClient(world)
 
             state = APPLYING_LIGHTS
             WorldLoader.load(parent, world)
@@ -206,6 +208,8 @@ class MergeExecutor(parent: Entry): Executor(parent) {
             state = RELOADING_WORLDS
             return null
         }
+
+        MergeIOWorker.clearMergeSpace()
 
         state = RELOADING_WORLDS
 
@@ -246,19 +250,21 @@ class MergeExecutor(parent: Entry): Executor(parent) {
         }
     }
 
-    private fun readAnvil(world: String, repo: Repository, checkout: String? = null): Pair<WorldAnvil, ObjectId> {
+    private fun readAnvil(world: String, repo: Repository, targetType: MergeWorker.TargetType, checkoutTo: String? = null): Pair<WorldAnvil, ObjectId> {
         val git = Git(repo)
 
-        if (checkout != null) {
+        if (checkoutTo != null) {
             try {
-                git.checkout().setName(checkout).call()
+                git.checkout().setName(checkoutTo).call()
             } catch (e: GitAPIException) {
-                throw UnknownSourceException(checkout)
+                throw UnknownSourceException(checkoutTo)
             }
         }
 
+        copyTerrains(world, targetType)
+
         return if (repo.refDatabase.findRef("HEAD").target.name == "HEAD") {
-            Pair(IOWorker.repositoryWorldNBTs(world), repo.resolve(checkout))
+            Pair(MergeIOWorker.repositoryWorldNBTs(world), repo.resolve(checkoutTo))
         } else {
             val commits = git.log().setMaxCount(1).call().toList()
             val commit =
@@ -266,7 +272,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
                 else throw NoValidCommitsException()
 
             sendTitle("reading regions...")
-            Pair(IOWorker.repositoryWorldNBTs(world), commit.id)
+            Pair(MergeIOWorker.repositoryWorldNBTs(world), commit.id)
         }
     }
 

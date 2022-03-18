@@ -26,10 +26,19 @@ class MinecraftAnvilWorker {
         val g = ChatColor.GRAY
         val w = ChatColor.WHITE
 
-        fun Array<File>.read(): AnvilFormat {
+        fun  readFile(target: File): Anvil<Terrain> {
+            val segments = target.name.split(".")
+            val regionX = segments[1].toInt()
+            val regionZ = segments[2].toInt()
+
+            return mapOf(AnvilLocation(regionX, regionZ) to target.readBytes())
+                .toAnvil { _, timestamp, nbt -> Terrain(timestamp, nbt) }
+        }
+
+        fun readFiles(targets: Array<File>): AnvilFormat {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
-            forEach {
+            targets.forEach {
                 val start = System.currentTimeMillis()
 
                 val segments = it.name.split(".")
@@ -72,7 +81,6 @@ class MinecraftAnvilWorker {
 
         fun WorldAnvil.toWorldAnvilFormat(): WorldAnvilFormat {
             return mapOf(
-                AnvilType.TERRAIN to terrain.toAnvilFormat(),
                 AnvilType.ENTITY to entity.toAnvilFormat(),
                 AnvilType.POI to poi.toAnvilFormat()
             )

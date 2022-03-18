@@ -107,6 +107,8 @@ class WorldLightUpdater {
 
         private val updateTargets = mutableListOf<Triple<Int, Int, Int>>()
 
+        private val around = listOf(0 to 1, 1 to 1, 1 to 0, 1 to -1, 0 to -1, -1 to -1, -1 to 0, -1 to 1)
+
         fun Palette.isEmittingLights(): Boolean {
             if (!lightSources.keys.contains(name)) return false
 
@@ -121,11 +123,14 @@ class WorldLightUpdater {
                 updateTargets.forEachIndexed { index, (x, y, z) ->
                     Executor.sendTitle("updating light sources [$index/${updateTargets.size}]")
                     val block = world.getBlockAt(x, y, z)
+                    val chunk = block.chunk
+                    around.forEach { world.loadChunk(chunk.x + it.first, chunk.z + it.second) }
                     val blockData = block.blockData
                     val blockState = block.state
                     world.setBlockData(x, y, z, Material.AIR.createBlockData())
                     world.setBlockData(x, y, z, blockData)
                     blockState.update(true, true)
+                    around.forEach { world.unloadChunk(chunk.x + it.first, chunk.z + it.second) }
                 }
                 updateTargets.clear()
 

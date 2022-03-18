@@ -15,7 +15,7 @@ class InitializeExecutor(parent: Entry): Executor(parent) {
     override val description: String = "initializes new repository of given world"
 
     override suspend fun exec(sender: CommandSender?, args: List<String>): CommandExecuteResult {
-        if (!Entry.versionedFolder.exists()) Entry.versionedFolder.mkdirs()
+        if (!Entry.repositoryFolder.exists()) Entry.repositoryFolder.mkdirs()
 
         val world = args[0]
 
@@ -27,7 +27,7 @@ class InitializeExecutor(parent: Entry): Executor(parent) {
 
         targets.forEach {
 
-            val gitDir = File("${Entry.versionedFolder.absolutePath}/$it/.git")
+            val gitDir = File("${Entry.repositoryFolder.absolutePath}/$it/.git")
             if (gitDir.exists() && args.size == 1) {
                 skipped.add(it)
                 return@forEach

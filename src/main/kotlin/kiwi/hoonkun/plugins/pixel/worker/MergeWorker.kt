@@ -6,6 +6,8 @@ import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater.Companion.isEmittingLights
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
+import kiwi.hoonkun.plugins.pixel.worker.MergeIOWorker.Companion.getMergeSpaceTerrains
+import kiwi.hoonkun.plugins.pixel.worker.MergeIOWorker.Companion.writeTerrains
 import kotlinx.coroutines.Job
 
 import org.bukkit.ChatColor
@@ -43,30 +45,39 @@ class MergeWorker {
         }
 
         fun merge(job: Job?, from: WorldAnvil, into: WorldAnvil, ancestor: WorldAnvil, mode: MergeMode): WorldAnvil {
-            val mergedTerrainAnvil: MutableAnvil<Terrain> = mutableMapOf()
+            val terrainRegistry = MergeIOWorker.generateTerrainRegistry()
 
-            Executor.sendTitle("merging terrains...")
-
-            val (createdTerrains, existsTerrains) =
-                from.terrain.entries.classificationByBoolean { !into.terrain.containsKey(it.key) }
-
-            createdTerrains.forEach { mergedTerrainAnvil[it.key] = it.value.toMutableList() }
-
-            existsTerrains.map { it.key }.forEach { location ->
+            terrainRegistry.forEach { location ->
                 val mergedTerrains = mutableListOf<Terrain>()
 
-                val fromTerrains = from.terrain[location]
-                val intoTerrains = into.terrain[location]
+                Executor.sendTitle("reading source terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
+                val fromTerrains = location.getMergeSpaceTerrains(TargetType.SOURCE)
+
+                Executor.sendTitle("reading current terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
+                val intoTerrains = location.getMergeSpaceTerrains(TargetType.CURRENT)
+
+                if (intoTerrains == null && fromTerrains != null) {
+                    mergedTerrains.addAll(fromTerrains)
+                    return@forEach
+                }
+
+                if (intoTerrains != null && fromTerrains == null) {
+                    mergedTerrains.addAll(intoTerrains)
+                    return@forEach
+                }
 
                 if (fromTerrains == intoTerrains && intoTerrains != null) {
                     mergedTerrains.addAll(intoTerrains)
                     return@forEach
                 }
 
+                Executor.sendTitle("reading base terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
+                val ancestorTerrains = location.getMergeSpaceTerrains(TargetType.BASE)
+
                 associateTerrain(
-                    from.terrain[location],
-                    into.terrain[location],
-                    ancestor.terrain[location]
+                    fromTerrains,
+                    intoTerrains,
+                    ancestorTerrains
                 ).forEach { associatedMap ->
                     throwIfInactive(job)
 
@@ -90,7 +101,7 @@ class MergeWorker {
                     }
                 }
 
-                mergedTerrainAnvil[location] = mergedTerrains
+                location.writeTerrains(mergedTerrains)
             }
 
             Executor.sendTitle("merging entities...")
@@ -310,7 +321,7 @@ class MergeWorker {
                 it.key to it.value.map { mutablePoi -> mutablePoi.toPoi() }
             }
 
-            return WorldAnvil(mergedTerrainAnvil, mergedEntityAnvil, mergedPoiAnvil)
+            return WorldAnvil(mergedEntityAnvil, mergedPoiAnvil)
         }
 
         private fun mergeTerrain(
@@ -450,16 +461,6 @@ class MergeWorker {
                 .toList()
         }
 
-        private inline fun <T>Collection<T>.classificationByBoolean(criteria: (value: T) -> Boolean): Pair<List<T>, List<T>> {
-            val a = mutableListOf<T>()
-            val b = mutableListOf<T>()
-            forEach {
-                if (criteria(it)) a.add(it)
-                else b.add(it)
-            }
-            return Pair(a, b)
-        }
-
         private fun associateTerrain(from: List<Terrain>?, into: List<Terrain>?, ancestor: List<Terrain>?): Map<ChunkLocation, AssociatedChunk> {
             val chunkMap = mutableMapOf<ChunkLocation, AssociatedChunk>()
             from?.forEach {
@@ -489,10 +490,14 @@ class MergeWorker {
             )
         }
 
-        enum class MergeMode {
-            KEEP, REPLACE
-        }
+    }
 
+    enum class MergeMode {
+        KEEP, REPLACE
+    }
+
+    enum class TargetType(val path: String) {
+        CURRENT("current"), SOURCE("source"), BASE("base"), RESULT("result")
     }
 
     private data class AssociatedChunk(var from: Terrain? = null, var into: Terrain? = null, var ancestor: Terrain? = null)

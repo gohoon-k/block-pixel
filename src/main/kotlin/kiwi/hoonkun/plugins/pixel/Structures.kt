@@ -3,6 +3,8 @@ package kiwi.hoonkun.plugins.pixel
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
+import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
+import java.io.File
 
 /** 월드 하나의 모든 ByteArray 타입의 MinecraftAnvil 파일 데이터를 포함하는 데이터 구조 */
 typealias WorldAnvilFormat = Map<AnvilType, AnvilFormat>
@@ -29,13 +31,26 @@ data class AnvilLocation(val x: Int, val z: Int)
 data class ChunkLocation(val x: Int, val z: Int)
 
 /** 버전관리가 진행되는 Anvil 의 타입들 */
-enum class AnvilType(val path: String) {
-    TERRAIN("region"), POI("poi"), ENTITY("entities")
+enum class AnvilType(private val path: String) {
+    TERRAIN("region"), POI("poi"), ENTITY("entities");
+
+    fun getClient(worldName: String): String {
+        val worldDir = "${Entry.clientFolder.absolutePath}/$worldName"
+        val dimDir = File(worldDir).listFiles()?.find { it.name.contains("DIM") }
+
+        return if (dimDir == null) "$worldDir/$path"
+        else "$worldDir/${dimDir.name}/$path"
+    }
+
+    fun getRepository(worldName: String): String =
+        "${Entry.repositoryFolder.absolutePath}/$worldName/$path"
+
+    fun getMergeSpace(targetType: MergeWorker.TargetType): String =
+        "${Entry.mergeFolder.absolutePath}/${targetType.path}/$path"
 }
 
 /** 월드 하나의 모든 MinecraftAnvil NBT 데이터를 포함하는 데이터 구조 */
 data class WorldAnvil(
-    val terrain: Anvil<Terrain>,
     val entity: Anvil<Entity>,
     val poi: Anvil<Poi>
 )
