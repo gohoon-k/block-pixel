@@ -79,7 +79,8 @@ class MergeWorker {
                 ).forEach { associatedMap ->
                     throwIfInactive(job)
 
-                    Executor.sendTitle("merging terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${associatedMap.key.x}$g][$w${associatedMap.key.z}$g]")
+                    val relative = associatedMap.key.toRelative(location)
+                    Executor.sendTitle("merging terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w.chunk$g[$w${relative.x}$g][$w${relative.z}$g]")
 
                     val associatedTerrains = associatedMap.value
                     val fromT = associatedTerrains.from

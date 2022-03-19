@@ -213,7 +213,7 @@ class MergeExecutor(parent: Entry): Executor(parent) {
 
         state = RELOADING_WORLDS
 
-        sendTitle("light updated finished, reloading world...")
+        sendTitle("light updated finished, unloading world...")
         IOWorker.addToVersionControl(parent, world, needsLoad = false)
 
         state = COMMITTING
