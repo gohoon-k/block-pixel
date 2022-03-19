@@ -7,11 +7,31 @@ import java.nio.ByteBuffer
 
 typealias AnyTag = Tag<out Any>
 
-abstract class Tag<T: Any> protected constructor(val type: TagType, val name: String?) {
+abstract class Tag<T: Any> protected constructor(
+    val type: TagType,
+    val name: String?,
+    val parent: Tag<out Any>?
+) {
+
+    init {
+        if (parent != null && parent.type != TAG_COMPOUND && parent.type != TAG_LIST)
+            throw Exception("parent must be one of 'TAG_COMPOUND' or 'TAG_LIST'")
+    }
 
     lateinit var value: T
 
+    val path: String? get() = "${
+        parent?.path?.plus(
+            when (parent.type) {
+                TAG_COMPOUND -> if (parent.name == null) "" else "."
+                TAG_LIST -> "[${indexInList!!}]."
+                else -> ""
+            }
+        ) ?: ""
+    }${name ?: ""}".ifEmpty { null }
     abstract val sizeInBytes: Int
+
+    var indexInList: Int? = null
 
     inline fun <reified T: AnyTag?> getAs() = this as? T ?: throw Exception("Tag is not a ${T::class.java.simpleName}")
 
@@ -31,20 +51,49 @@ abstract class Tag<T: Any> protected constructor(val type: TagType, val name: St
 
     companion object {
 
-        fun read(tagType: TagType, buffer: ByteBuffer, name: String? = null) = when(tagType) {
+        @JvmStatic
+        protected val ignorePaths = mutableListOf<String>()
+
+        @JvmStatic
+        protected val ignorePathRegex = mutableListOf<Regex>()
+
+        fun read(tagType: TagType, buffer: ByteBuffer, name: String? = null, parent: AnyTag?) = when(tagType) {
             TAG_END -> EndTag()
-            TAG_BYTE -> ByteTag(buffer, name)
-            TAG_SHORT -> ShortTag(buffer, name)
-            TAG_INT -> IntTag(buffer, name)
-            TAG_LONG -> LongTag(buffer, name)
-            TAG_FLOAT -> FloatTag(buffer, name)
-            TAG_DOUBLE -> DoubleTag(buffer, name)
-            TAG_BYTE_ARRAY -> ByteArrayTag(buffer, name)
-            TAG_STRING -> StringTag(buffer, name)
-            TAG_LIST -> ListTag(buffer, name)
-            TAG_COMPOUND -> CompoundTag(buffer, name)
-            TAG_INT_ARRAY -> IntArrayTag(buffer, name)
-            TAG_LONG_ARRAY -> LongArrayTag(buffer, name)
+            TAG_BYTE -> ByteTag(buffer, name, parent)
+            TAG_SHORT -> ShortTag(buffer, name, parent)
+            TAG_INT -> IntTag(buffer, name, parent)
+            TAG_LONG -> LongTag(buffer, name, parent)
+            TAG_FLOAT -> FloatTag(buffer, name, parent)
+            TAG_DOUBLE -> DoubleTag(buffer, name, parent)
+            TAG_BYTE_ARRAY -> ByteArrayTag(buffer, name, parent)
+            TAG_STRING -> StringTag(buffer, name, parent)
+            TAG_LIST -> ListTag(buffer, name, parent)
+            TAG_COMPOUND -> CompoundTag(buffer, name, parent)
+            TAG_INT_ARRAY -> IntArrayTag(buffer, name, parent)
+            TAG_LONG_ARRAY -> LongArrayTag(buffer, name, parent)
+        }
+
+        fun addIgnorePath(path: String) {
+            if (ignorePaths.contains(path)) return
+
+            ignorePaths.add(path)
+            ignorePathRegex.add(Regex(regexPath(path)))
+        }
+
+        fun removeIgnorePath(path: String) {
+            if (!ignorePaths.contains(path)) return
+
+            ignorePaths.remove(path)
+            ignorePathRegex.removeIf { it.pattern == regexPath(path) }
+        }
+
+        private fun regexPath(path: String): String {
+            return path.replace(".", "\\.")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+                .replace("*", "[0-9]+")
         }
 
     }

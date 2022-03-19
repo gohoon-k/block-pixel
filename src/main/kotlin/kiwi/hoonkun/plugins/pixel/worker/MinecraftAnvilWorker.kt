@@ -63,7 +63,11 @@ class MinecraftAnvilWorker {
 
                     val (timestamp, buffer) = decompress(bytes, i) ?: continue
 
-                    parts.add(generator.invoke(ChunkLocation(32 * anvilLocation.x + x, 32 * anvilLocation.z + z), timestamp, Tag.read(TagType.TAG_COMPOUND, buffer, null).getAs()))
+                    parts.add(generator.invoke(
+                        ChunkLocation(32 * anvilLocation.x + x, 32 * anvilLocation.z + z),
+                        timestamp,
+                        Tag.read(TagType.TAG_COMPOUND, buffer, null, null).getAs()
+                    ))
                 }
 
                 result[anvilLocation] = parts

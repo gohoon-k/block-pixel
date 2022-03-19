@@ -1,18 +1,19 @@
 package kiwi.hoonkun.plugins.pixel.nbt.tag
 
+import kiwi.hoonkun.plugins.pixel.nbt.AnyTag
 import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType.TAG_LONG
 import java.nio.ByteBuffer
 
-class LongTag private constructor(name: String? = null): Tag<Long>(TAG_LONG, name) {
+class LongTag private constructor(name: String? = null, parent: AnyTag?): Tag<Long>(TAG_LONG, name, parent) {
 
     override val sizeInBytes get() = Long.SIZE_BYTES
 
-    constructor(value: Long, name: String? = null): this(name) {
+    constructor(value: Long, name: String? = null, parent: AnyTag?): this(name, parent) {
         this.value = value
     }
 
-    constructor(buffer: ByteBuffer, name: String? = null): this(name) {
+    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
         read(buffer)
     }
 
@@ -24,6 +25,6 @@ class LongTag private constructor(name: String? = null): Tag<Long>(TAG_LONG, nam
         buffer.putLong(value)
     }
 
-    override fun clone(name: String?) = LongTag(value, name)
+    override fun clone(name: String?) = LongTag(value, name, parent)
 
 }

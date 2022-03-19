@@ -1,19 +1,20 @@
 package kiwi.hoonkun.plugins.pixel.nbt.tag
 
+import kiwi.hoonkun.plugins.pixel.nbt.AnyTag
 import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType.*
 
 import java.nio.ByteBuffer
 
-class DoubleTag private constructor(name: String? = null): Tag<Double>(TAG_DOUBLE, name) {
+class DoubleTag private constructor(name: String? = null, parent: AnyTag?): Tag<Double>(TAG_DOUBLE, name, parent) {
 
     override val sizeInBytes get() = Double.SIZE_BYTES
 
-    constructor(value: Double, name: String? = null): this(name) {
+    constructor(value: Double, name: String? = null, parent: AnyTag?): this(name, parent) {
         this.value = value
     }
 
-    constructor(buffer: ByteBuffer, name: String? = null): this(name) {
+    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
         read(buffer)
     }
 
@@ -25,6 +26,6 @@ class DoubleTag private constructor(name: String? = null): Tag<Double>(TAG_DOUBL
         buffer.putDouble(value)
     }
 
-    override fun clone(name: String?) = DoubleTag(value, name)
+    override fun clone(name: String?) = DoubleTag(value, name, parent)
 
 }

@@ -1,18 +1,19 @@
 package kiwi.hoonkun.plugins.pixel.nbt.tag
 
+import kiwi.hoonkun.plugins.pixel.nbt.AnyTag
 import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType.*
 import java.nio.ByteBuffer
 
-class IntArrayTag private constructor(name: String? = null): Tag<IntArray>(TAG_INT_ARRAY, name) {
+class IntArrayTag private constructor(name: String? = null, parent: AnyTag?): Tag<IntArray>(TAG_INT_ARRAY, name, parent) {
 
     override val sizeInBytes get() = Int.SIZE_BYTES + value.size * Int.SIZE_BYTES
 
-    constructor(value: IntArray, name: String? = null): this(name) {
+    constructor(value: IntArray, name: String? = null, parent: AnyTag?): this(name, parent) {
         this.value = value
     }
 
-    constructor(buffer: ByteBuffer, name: String? = null): this(name) {
+    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
         read(buffer)
     }
 
@@ -25,7 +26,7 @@ class IntArrayTag private constructor(name: String? = null): Tag<IntArray>(TAG_I
         value.forEach { buffer.putInt(it) }
     }
 
-    override fun clone(name: String?) = IntArrayTag(value, name)
+    override fun clone(name: String?) = IntArrayTag(value, name, parent)
 
     override fun valueToString(): String = "[ ${value.joinToString(", ")} ]"
 

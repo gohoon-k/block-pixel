@@ -2,6 +2,7 @@ package kiwi.hoonkun.plugins.pixel.worker
 
 import kiwi.hoonkun.plugins.pixel.*
 import kiwi.hoonkun.plugins.pixel.commands.Executor
+import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.tag.CompoundTag
 import kiwi.hoonkun.plugins.pixel.worker.WorldLightUpdater.Companion.isEmittingLights
 import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.pack
@@ -46,6 +47,8 @@ class MergeWorker {
 
         fun merge(job: Job?, from: WorldAnvil, into: WorldAnvil, ancestor: WorldAnvil, mode: MergeMode): WorldAnvil {
             val terrainRegistry = MergeIOWorker.generateTerrainRegistry()
+
+            Tag.addIgnorePath("sections[*].SkyLight")
 
             terrainRegistry.forEach { location ->
                 val mergedTerrains = mutableListOf<Terrain>()
@@ -102,6 +105,8 @@ class MergeWorker {
 
                 location.writeTerrains(mergedTerrains)
             }
+
+            Tag.removeIgnorePath("sections[*].SkyLight")
 
             val allMergedEntities = mutableListOf<EntityEach>()
 
@@ -163,7 +168,7 @@ class MergeWorker {
                         ?: into.entity[anvilLocation]!!.find { it.location == nbtLocation }
                         ?: throw Exception("cannot find entity from 'into' and 'from'.")
 
-                    entity = MutableEntity(nbtLocation, oldEntity.timestamp, CompoundTag(mutableMapOf(), null))
+                    entity = MutableEntity(nbtLocation, oldEntity.timestamp, CompoundTag(mutableMapOf(), null, null))
                         .apply {
                             position = intArrayOf(nbtLocation.x, nbtLocation.z)
                             dataVersion = oldEntity.dataVersion
@@ -290,12 +295,12 @@ class MergeWorker {
                         ?: into.poi[anvilLocation]!!.find { nbtLocation == it.location }?.timestamp
                         ?: throw Exception("cannot find poi in 'from' and 'into'.")
 
-                    poi = MutablePoi(nbtLocation, timestamp, CompoundTag(mutableMapOf(), null))
+                    poi = MutablePoi(nbtLocation, timestamp, CompoundTag(mutableMapOf(), null, null))
                     mergedMutablePoiAnvil[anvilLocation]!!.add(poi)
                 }
 
                 if (poi.sections == null)
-                    poi.sections = mutableMapOf()
+                    poi.sections = MutablePoiSections(CompoundTag(mutableMapOf(), "Sections", poi.nbt))
 
                 if (poi.dataVersion == null)
                     poi.dataVersion = from.poi[anvilLocation]!!.find { nbtLocation == it.location }?.dataVersion
@@ -303,7 +308,7 @@ class MergeWorker {
                         ?: throw Exception("cannot find poi in 'from' and 'into'.")
 
                 if (poi.sections!![sectionY] == null)
-                    poi.sections!![sectionY] = MutablePoiSection(CompoundTag(mutableMapOf(), sectionY.toString()))
+                    poi.sections!![sectionY] = MutablePoiSection(CompoundTag(mutableMapOf(), sectionY.toString(), poi.sections!!.nbt))
                         .apply { valid = 1 }
 
                 if (poi.sections!![sectionY]!!.records == null)
@@ -412,7 +417,6 @@ class MergeWorker {
 
                 resultTerrain.sections[sectionIndex].blockStates.data = resultD
                 resultTerrain.sections[sectionIndex].blockStates.palette = resultPS
-                resultTerrain.sections[sectionIndex].skyLight = null
             }
 
             resultTerrain.blockEntities = resultE

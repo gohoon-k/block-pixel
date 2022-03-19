@@ -2,7 +2,6 @@ package kiwi.hoonkun.plugins.pixel
 
 import kiwi.hoonkun.plugins.pixel.nbt.TagType
 import kiwi.hoonkun.plugins.pixel.nbt.tag.*
-import kiwi.hoonkun.plugins.pixel.worker.ArrayPacker.Companion.unpack
 import kiwi.hoonkun.plugins.pixel.worker.MergeWorker
 import java.io.File
 
@@ -77,7 +76,7 @@ class Terrain(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var blockEntities
         get() = nbt["block_entities"]!!.getAs<ListTag>().value.map { BlockEntity(it.getAs()) }
         set(value) {
-            nbt["block_entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "block_entities")
+            nbt["block_entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "block_entities", nbt)
         }
 
     override fun equals(other: Any?): Boolean {
@@ -109,17 +108,12 @@ data class Section(private val nbt: CompoundTag) {
     val y: Byte get() {
         val yTag = nbt["Y"]
         if (yTag is IntTag) {
-            nbt["Y"] = ByteTag(yTag.value.toByte(), "Y")
+            nbt["Y"] = ByteTag(yTag.value.toByte(), "Y", nbt)
             return yTag.value.toByte()
         }
         return yTag!!.getAs<ByteTag>().value
     }
     val blockStates = BlockStates(nbt["block_states"]!!.getAs())
-    var skyLight: SkyLight?
-        get() = nbt["SkyLight"]?.getAs<ByteArrayTag>()?.value?.unpack()
-        set(value) {
-            if (value == null) nbt.value.remove("SkyLight")
-        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -129,7 +123,6 @@ data class Section(private val nbt: CompoundTag) {
 
         if (y != other.y) return false
         if (blockStates != other.blockStates) return false
-        if (skyLight != other.skyLight) return false
 
         return true
     }
@@ -137,7 +130,6 @@ data class Section(private val nbt: CompoundTag) {
     override fun hashCode(): Int {
         var result = y.toInt()
         result = 31 * result + blockStates.hashCode()
-        result = 31 * result + (skyLight?.hashCode() ?: 0)
         return result
     }
 }
@@ -148,12 +140,12 @@ data class BlockStates(private val nbt: CompoundTag) {
             Palette(it.getAs())
         }
         set(value) {
-            nbt["palette"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "palette")
+            nbt["palette"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "palette", nbt)
         }
     var data: PackedBlocks
         get() = nbt["data"]?.getAs<LongArrayTag>()?.value ?: LongArray(0)
         set(value) {
-            nbt["data"] = LongArrayTag(value, "data")
+            nbt["data"] = LongArrayTag(value, "data", nbt)
         }
 
     override fun equals(other: Any?): Boolean {
@@ -201,35 +193,51 @@ class Poi(override val location: ChunkLocation, timestamp: Int, nbt: CompoundTag
     var sections: Map<Int, PoiSection>
         get() = nbt["Sections"]!!.getAs<CompoundTag>().value.entries.associate { (k, v) -> k.toInt() to PoiSection(v.getAs()) }
         set(value) {
-            nbt["Sections"] = CompoundTag(value.entries.associate { it.key.toString() to it.value.nbt }.toMutableMap(), "Sections")
+            nbt["Sections"] = CompoundTag(value.entries.associate { it.key.toString() to it.value.nbt }.toMutableMap(), "Sections", nbt)
         }
     var dataVersion: Int
         get() = nbt["DataVersion"]!!.getAs<IntTag>().value
         set(value) {
-            nbt["DataVersion"] = IntTag(value, "DataVersion")
+            nbt["DataVersion"] = IntTag(value, "DataVersion", nbt)
         }
 }
 
 class MutablePoi(override val location: ChunkLocation, timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
-    var sections: MutableMap<Int, MutablePoiSection>? = null
+    var sections: MutablePoiSections? = null
     var dataVersion: Int? = null
 
     fun toPoi(): Poi = Poi(location, timestamp, nbt).apply {
-        sections = this@MutablePoi.sections!!.map { it.key to it.value.toPoiSection() }.toMap()
+        sections = this@MutablePoi.sections!!.toPoiSections()
         dataVersion = this@MutablePoi.dataVersion!!
     }
+}
+
+data class MutablePoiSections(val nbt: CompoundTag) {
+
+    private val map = mutableMapOf<Int, MutablePoiSection>()
+
+    operator fun get(y: Int): MutablePoiSection? = map[y]
+
+    operator fun set(y: Int, section: MutablePoiSection) {
+        map[y] = section
+    }
+
+    fun toPoiSections(): Map<Int, PoiSection> {
+        return map.map { it.key to it.value.toPoiSection() }.toMap()
+    }
+
 }
 
 data class PoiSection(val nbt: CompoundTag) {
     var valid: Byte
         get() = nbt["Valid"]!!.getAs<ByteTag>().value
         set(value) {
-            nbt["Valid"] = ByteTag(value, "Valid")
+            nbt["Valid"] = ByteTag(value, "Valid", nbt)
         }
     var records: List<PoiRecord>
         get() = nbt["Records"]!!.getAs<ListTag>().value.map { PoiRecord(it.getAs()) }
         set(value) {
-            nbt["Records"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "Records")
+            nbt["Records"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "Records", nbt)
         }
 }
 
@@ -248,7 +256,7 @@ data class PoiRecord(val nbt: CompoundTag) {
     var freeTickets: Int
         get() = nbt["free_tickets"]!!.getAs<IntTag>().value
         set(value) {
-            nbt["free_tickets"] = IntTag(value, "free_tickets")
+            nbt["free_tickets"] = IntTag(value, "free_tickets", nbt)
         }
     val type = nbt["type"]!!.getAs<StringTag>().value
 
@@ -270,7 +278,7 @@ class Entity(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var position: IntArray
         get() = nbt["Position"]!!.getAs<IntArrayTag>().value
         set(value) {
-            nbt["Position"] = IntArrayTag(value, "Position")
+            nbt["Position"] = IntArrayTag(value, "Position", nbt)
         }
 
     private val xPos get() = position[0]
@@ -281,13 +289,13 @@ class Entity(timestamp: Int, nbt: CompoundTag): ChunkData(timestamp, nbt) {
     var entities: List<EntityEach>
         get() = nbt["Entities"]!!.getAs<ListTag>().value.map { EntityEach(it.getAs()) }
         set(value) {
-            nbt["Entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "Entities")
+            nbt["Entities"] = ListTag(TagType.TAG_COMPOUND, value.map { it.nbt }, true, "Entities", nbt)
         }
 
     var dataVersion: Int
         get() = nbt["DataVersion"]!!.getAs<IntTag>().value
         set(value) {
-            nbt["DataVersion"] = IntTag(value, "DataVersion")
+            nbt["DataVersion"] = IntTag(value, "DataVersion", nbt)
         }
 }
 

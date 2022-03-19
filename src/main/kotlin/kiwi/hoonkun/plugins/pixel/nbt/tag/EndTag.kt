@@ -4,7 +4,7 @@ import kiwi.hoonkun.plugins.pixel.nbt.Tag
 import kiwi.hoonkun.plugins.pixel.nbt.TagType.*
 import java.nio.ByteBuffer
 
-class EndTag: Tag<Nothing>(TAG_END, null) {
+class EndTag: Tag<Nothing>(TAG_END, null, null) {
 
     override val sizeInBytes = 0
 

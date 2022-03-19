@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
 
 typealias Compound = MutableMap<String, AnyTag>
 
-class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_COMPOUND, name) {
+class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Tag<Compound>(TAG_COMPOUND, name, parent) {
 
     private var complicated = false
 
@@ -25,11 +25,11 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
         value[key] = nv
     }
 
-    constructor(value: Compound, name: String? = null): this(name) {
+    constructor(value: Compound, name: String? = null, parent: AnyTag?): this(name, parent) {
         this.value = value.map { (name, tag) -> name to tag.ensureName(name) }.toMap().toMutableMap()
     }
 
-    constructor(buffer: ByteBuffer, name: String? = null): this(name) {
+    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
         read(buffer)
     }
 
@@ -43,7 +43,7 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
             if (nextId == TAG_END.id) break
 
             val nextName = buffer.string
-            val nextTag = read(TagType[nextId], buffer, nextName)
+            val nextTag = read(TagType[nextId], buffer, nextName, this)
 
             new[nextName] = nextTag
         } while (true)
@@ -53,6 +53,8 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
 
     override fun write(buffer: ByteBuffer) {
         value.entries.forEach { (name, tag) ->
+            if (ignorePathRegex.find { tag.path?.matches(it) == true } != null) return@forEach
+
             buffer.put(tag.type.id)
             buffer.putString(name)
 
@@ -68,7 +70,7 @@ class CompoundTag private constructor(name: String? = null): Tag<Compound>(TAG_C
         write(buffer)
     }
 
-    override fun clone(name: String?) = CompoundTag(value.map { (name, tag) -> name to tag.clone(name) }.toMap().toMutableMap(), name)
+    override fun clone(name: String?) = CompoundTag(value.map { (name, tag) -> name to tag.clone(name) }.toMap().toMutableMap(), name, parent)
 
     override fun valueToString(): String {
         val result = "{\n${value.entries.sortedBy { it.key }.joinToString(",\n") { "${it.value}" }}\n}"
