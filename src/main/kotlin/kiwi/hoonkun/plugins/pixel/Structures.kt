@@ -28,7 +28,12 @@ typealias SkyLight = List<Byte>
 /** Anvil 의 위치. 파일이름에 포함되는 그것이다. 예를 들어 r.-1.0.mca 일 경우 x는 -1, z는 0이 된다. */
 data class AnvilLocation(val x: Int, val z: Int)
 /** Chunk 의 위치. Anvil 에 상대적이지 않은 청크 좌표계의 절대 위치이다. */
-data class ChunkLocation(val x: Int, val z: Int)
+data class ChunkLocation(val x: Int, val z: Int) {
+    fun toRelative(base: AnvilLocation): RelativeChunkLocation
+        = RelativeChunkLocation(x - base.x * 32, z - base.z * 32)
+}
+/** Anvil 에 상대적인 Chunk 의 위치. */
+data class RelativeChunkLocation(val x: Int, val z: Int)
 
 /** 버전관리가 진행되는 Anvil 의 타입들 */
 enum class AnvilType(private val path: String) {
