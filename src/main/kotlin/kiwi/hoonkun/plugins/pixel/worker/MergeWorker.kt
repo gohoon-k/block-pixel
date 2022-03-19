@@ -50,10 +50,9 @@ class MergeWorker {
             terrainRegistry.forEach { location ->
                 val mergedTerrains = mutableListOf<Terrain>()
 
-                Executor.sendTitle("reading source terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
-                val fromTerrains = location.getMergeSpaceTerrains(TargetType.SOURCE)
+                Executor.sendTitle("reading terrain, region$g[$w${location.x}$g][$w${location.z}$g]$w")
 
-                Executor.sendTitle("reading current terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
+                val fromTerrains = location.getMergeSpaceTerrains(TargetType.SOURCE)
                 val intoTerrains = location.getMergeSpaceTerrains(TargetType.CURRENT)
 
                 if (intoTerrains == null && fromTerrains != null) {
@@ -71,7 +70,6 @@ class MergeWorker {
                     return@forEach
                 }
 
-                Executor.sendTitle("reading base terrain$g[$w${location.x}$g][$w${location.z}$g]$w")
                 val ancestorTerrains = location.getMergeSpaceTerrains(TargetType.BASE)
 
                 associateTerrain(
@@ -104,8 +102,6 @@ class MergeWorker {
                 location.writeTerrains(mergedTerrains)
             }
 
-            Executor.sendTitle("merging entities...")
-
             val allMergedEntities = mutableListOf<EntityEach>()
 
             val fEntities = from.entity.values.flatten().flatMap { it.entities }
@@ -136,16 +132,16 @@ class MergeWorker {
                 )
             }
 
-            Executor.sendTitle("classifying entities to regions...")
-
             val villagers = allMergedEntities.filter { it.id == "minecraft:villager" }
             val fVillagers = fEntities.filter { it.id == "minecraft:villager" }
             val iVillagers = iEntities.filter { it.id == "minecraft:villager" }
 
             val mergedMutableEntityAnvil: MutableAnvil<MutableEntity> = mutableMapOf()
 
-            allMergedEntities.forEach { entityEach ->
+            allMergedEntities.forEachIndexed { index, entityEach ->
                 throwIfInactive(job)
+
+                Executor.sendTitle("classifying entities to each chunks [$index/${allMergedEntities.size}]")
 
                 val nbtLocation = ChunkLocation(
                     floor(entityEach.pos[0] / 16.0).toInt(),
@@ -181,8 +177,6 @@ class MergeWorker {
             val mergedEntityAnvil: Anvil<Entity> = mergedMutableEntityAnvil.entries.associate {
                 it.key to it.value.map { mutableEntity -> mutableEntity.toEntity() }
             }
-
-            Executor.sendTitle("merging poi...")
 
             val fRecords = flattenRecords(from.poi)
             val iRecords = flattenRecords(into.poi)

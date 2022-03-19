@@ -271,7 +271,6 @@ class MergeExecutor(parent: Entry): Executor(parent) {
                 if (commits.isNotEmpty()) commits[0]
                 else throw NoValidCommitsException()
 
-            sendTitle("reading regions...")
             Pair(MergeIOWorker.repositoryWorldNBTs(world), commit.id)
         }
     }

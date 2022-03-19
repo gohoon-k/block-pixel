@@ -22,7 +22,6 @@ class MinecraftAnvilWorker {
         private const val HEADER_LENGTH = 8192
         private const val SECTOR_UNIT = 4096
 
-        val dg = ChatColor.DARK_GRAY
         val g = ChatColor.GRAY
         val w = ChatColor.WHITE
 
@@ -39,15 +38,13 @@ class MinecraftAnvilWorker {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             targets.forEach {
-                val start = System.currentTimeMillis()
-
                 val segments = it.name.split(".")
                 val regionX = segments[1].toInt()
                 val regionZ = segments[2].toInt()
 
                 result[AnvilLocation(regionX, regionZ)] = it.readBytes()
 
-                Executor.sendTitle("${g}reading client anvil ${w}${it.name}${g} finished${dg} in ${System.currentTimeMillis() - start}ms")
+                Executor.sendTitle("${g}reading ${it.parentFile.name} region[$w$regionX$g][$w$regionZ$g]")
             }
 
             return result
@@ -57,8 +54,6 @@ class MinecraftAnvilWorker {
             val result = mutableMapOf<AnvilLocation, List<T>>()
 
             entries.forEach { (anvilLocation, bytes) ->
-                val start = System.currentTimeMillis()
-
                 val parts = mutableListOf<T>()
 
                 for (m in 0 until 32 * 32) {
@@ -72,8 +67,6 @@ class MinecraftAnvilWorker {
                 }
 
                 result[anvilLocation] = parts
-
-                Executor.sendTitle("generating nbt $g[$w${anvilLocation.x}$g][$w${anvilLocation.z}$g]$w finished$dg in ${System.currentTimeMillis() - start}")
             }
 
             return result
@@ -90,8 +83,6 @@ class MinecraftAnvilWorker {
             val result = mutableMapOf<AnvilLocation, ByteArray>()
 
             entries.forEach { (anvilLocation, dataList) ->
-                val regionStart = System.currentTimeMillis()
-
                 val locationHeader = ByteArray(4096)
                 val timestampsHeader = ByteArray(4096)
 
@@ -124,8 +115,6 @@ class MinecraftAnvilWorker {
                 regionStream.write(stream.toByteArray())
 
                 result[anvilLocation] = regionStream.toByteArray()
-
-                Executor.sendTitle("generating client region ${g}[${w}${anvilLocation.x}${g}][${w}${anvilLocation.z}${g}]${w} finished${dg} in ${System.currentTimeMillis() - regionStart}")
             }
 
             return result
