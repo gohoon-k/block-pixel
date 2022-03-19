@@ -15,9 +15,9 @@ class BranchUtils {
             }.toMutableList()
         }
 
-        fun shorten(name: String): String {
+        private fun shorten(name: String): String {
             val indexes = name.findIndexes('/')
-            return if (indexes.isEmpty()) name else name.substring(indexes[1] + 1, name.length)
+            return if (indexes.size < 2) name else name.substring(indexes[1] + 1, name.length)
         }
 
         fun String.findIndexes(char: Char): List<Int> {
