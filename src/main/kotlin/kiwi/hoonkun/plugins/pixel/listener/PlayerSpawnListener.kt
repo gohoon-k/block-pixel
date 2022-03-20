@@ -19,7 +19,7 @@ class PlayerSpawnListener(private val plugin: Entry): Listener {
             "world which you are trying to join is unloaded by pixel command, so you are joined to void world.\nplease wait until pixel command finishes."
         ) {
             if (event.spawnLocation.world?.name == Entry.VOID_WORLD_NAME)
-                event.spawnLocation = WorldLoader.returnPlayer(event.spawnLocation, event.player.uniqueId, plugin)
+                event.spawnLocation = WorldLoader.returnLocation(event.spawnLocation, event.player.uniqueId, plugin)
             else
                 event.spawnLocation = it
         }

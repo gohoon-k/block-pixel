@@ -23,7 +23,7 @@ class WorldLoader {
 
         private val environments = mutableMapOf<String, World.Environment>()
 
-        private lateinit var playersFrom: MutableMap<UUID, String>
+        private lateinit var playersFrom: MutableMap<UUID, PlayersFrom>
 
         private fun getWorld(plugin: JavaPlugin, worldName: String): World = plugin.server.getWorld(worldName)!!
 
@@ -86,7 +86,7 @@ class WorldLoader {
 
             plugin.server.scheduler.runTask(plugin, Runnable {
                 plugin.server.onlinePlayers.filter { it.world.uid == world.uid }.forEach {
-                    playersFrom[it.uniqueId] = it.world.name
+                    playersFrom[it.uniqueId] = PlayersFrom.fromLocation(it.world.name, it.location)
                     it.setGravity(false)
                     it.teleport(Location(void, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
                 }
@@ -101,19 +101,21 @@ class WorldLoader {
             val void = plugin.server.getWorld(Entry.VOID_WORLD_NAME)
 
             plugin.server.scheduler.runTask(plugin, Runnable {
-                plugin.server.onlinePlayers.filter { it.world.uid == void?.uid && playersFrom[it.uniqueId] == world.name }.forEach {
-                    it.teleport(Location(world, it.location.x, it.location.y, it.location.z, it.location.yaw, it.location.pitch))
+                plugin.server.onlinePlayers.filter { it.world.uid == void?.uid && playersFrom[it.uniqueId]?.world == world.name }.forEach {
+                    val from = playersFrom[it.uniqueId] ?: return@forEach
+                    it.teleport(Location(world, from.x, from.y, from.z, from.yaw, from.pitch))
                     it.setGravity(true)
                     playersFrom.remove(it.uniqueId)
                 }
             })
         }
 
-        fun returnPlayer(original: Location, uniqueId: UUID, plugin: JavaPlugin): Location {
-            val world = plugin.server.getWorld(playersFrom[uniqueId] ?: return original) ?: return original
+        fun returnLocation(original: Location, uniqueId: UUID, plugin: JavaPlugin): Location {
+            val from = playersFrom[uniqueId] ?: return original
+            val world = plugin.server.getWorld(from.world) ?: return original
 
             playersFrom.remove(uniqueId)
-            return Location(world, original.x, original.y, original.z, original.yaw, original.pitch)
+            return Location(world, from.x, from.y, from.z, from.yaw, from.pitch)
         }
 
         fun enable() {
@@ -126,7 +128,7 @@ class WorldLoader {
                 String(decompressed)
                     .split("\n")
                     .map { it.split(" from ") }
-                    .associate { UUID.fromString(it[0]) to it[1] }
+                    .associate { UUID.fromString(it[0]) to PlayersFrom.fromString(it[1]) }
                     .toMutableMap()
             } else {
                 mutableMapOf()
@@ -143,6 +145,37 @@ class WorldLoader {
                 val compressed = CompressUtils.GZip.compress(content.toByteArray())
                 datafile.writeBytes(compressed)
             }
+        }
+
+    }
+
+    data class PlayersFrom(
+        val world: String,
+        val x: Double,
+        val y: Double,
+        val z: Double,
+        val yaw: Float,
+        val pitch: Float
+    ) {
+        companion object {
+            fun fromLocation(world: String, location: Location): PlayersFrom {
+                return PlayersFrom(world, location.x, location.y, location.z, location.yaw, location.pitch)
+            }
+            fun fromString(input: String): PlayersFrom {
+                val segments = input.split(", ")
+                return PlayersFrom(
+                    segments[0],
+                    segments[1].toDouble(),
+                    segments[2].toDouble(),
+                    segments[3].toDouble(),
+                    segments[4].toFloat(),
+                    segments[5].toFloat()
+                )
+            }
+        }
+
+        override fun toString(): String {
+            return "$world, $x, $y, $z, $yaw, $pitch"
         }
 
     }
