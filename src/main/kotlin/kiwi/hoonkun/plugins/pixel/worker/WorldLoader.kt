@@ -16,7 +16,7 @@ class WorldLoader {
         private val loadingMessages = listOf(
             "I tried to print progress of world loading, but failed...",
             "How about taking some breaks while loading?",
-            "Created by dummy kiwi dodge!",
+            "Created by dummy kiwi dog!",
             "Palette is really amazing structure!",
             "Want some breaks? Now is the best timing!"
         )
