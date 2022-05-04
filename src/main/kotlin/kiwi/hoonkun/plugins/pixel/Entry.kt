@@ -74,6 +74,10 @@ class Entry: JavaPlugin() {
         repositoryFolder = File("${dataFolder.absolutePath}/repositories")
         clientFolder = dataFolder.absoluteFile.parentFile.parentFile
 
+        if (!mergeFolder.exists()) mergeFolder.mkdir()
+        if (!repositoryFolder.exists()) repositoryFolder.mkdir()
+        if (!clientFolder.exists()) clientFolder.mkdir()
+
         managers = File("${dataFolder.absolutePath}/pixel.managers")
             .apply { if (!exists()) createNewFile() }
             .let { String(it.readBytes()).split("\n").toSet() }

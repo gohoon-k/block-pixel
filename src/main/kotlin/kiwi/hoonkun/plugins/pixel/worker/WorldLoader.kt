@@ -120,7 +120,10 @@ class WorldLoader {
 
         fun enable() {
             val datafile = File("${Entry.repositoryFolder.absolutePath}/../pixel.players_from")
-            if (!datafile.exists()) datafile.createNewFile()
+            if (!datafile.exists()) {
+                datafile.parentFile.mkdirs()
+                datafile.createNewFile()
+            }
 
             val compressedBytes = datafile.readBytes()
             playersFrom = if (compressedBytes.isNotEmpty()) {
