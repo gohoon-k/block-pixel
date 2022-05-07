@@ -345,6 +345,10 @@ class MergeWorker {
 
                 val anceS = ancestorTerrain.sections[sectionIndex]
 
+                fromS.blockStates ?: return@forEach
+                intoS.blockStates ?: return@forEach
+                anceS.blockStates ?: return@forEach
+
                 val fromP = fromS.blockStates.palette
                 val fromM = fromS.blockStates.data.unpack(fromP.size).map { fromP[it] }
 
@@ -415,8 +419,10 @@ class MergeWorker {
                     if (resultPS.size != 1) resultP.map { resultPS.indexOf(it) }.pack(resultPS.size)
                     else LongArray(0)
 
-                resultTerrain.sections[sectionIndex].blockStates.data = resultD
-                resultTerrain.sections[sectionIndex].blockStates.palette = resultPS
+                val newStates = resultTerrain.sections[sectionIndex].blockStates ?: return@forEach
+
+                newStates.data = resultD
+                newStates.palette = resultPS
             }
 
             resultTerrain.blockEntities = resultE

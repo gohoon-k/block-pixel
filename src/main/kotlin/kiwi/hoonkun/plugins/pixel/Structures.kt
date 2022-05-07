@@ -113,7 +113,7 @@ data class Section(private val nbt: CompoundTag) {
         }
         return yTag!!.getAs<ByteTag>().value
     }
-    val blockStates = BlockStates(nbt["block_states"]!!.getAs())
+    val blockStates = if (nbt["block_states"] != null) BlockStates(nbt["block_states"]!!.getAs()) else null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
