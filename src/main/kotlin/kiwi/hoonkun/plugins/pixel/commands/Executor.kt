@@ -76,7 +76,7 @@ abstract class Executor(val parent: Entry) {
     fun worldsWithAll(arg: String, repository: Boolean = true): List<String> =
         if (arg == "all") {
             if (repository) parent.repositoryKeys else parent.availableWorldNames
-        } else if (parent.repositoryKeys.contains(arg)) {
+        } else if (!repository || parent.repositoryKeys.contains(arg)) {
             listOf(arg)
         } else throw UnknownWorldException(arg)
 
